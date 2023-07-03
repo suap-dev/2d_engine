@@ -5,9 +5,9 @@ fn main() {
     let mut world = World::new(&event_loop);
 
     let mut triangle = Entity::empty();
-    triangle.add_vertex(Vec2::new(0.0, 0.5)).unwrap();
-    triangle.add_vertex(Vec2::new(-0.5, -0.5)).unwrap();
-    triangle.add_vertex(Vec2::new(0.5, -0.5)).unwrap();
+    triangle.add_vertex(vec2(0.0, 0.5)).unwrap();
+    triangle.add_vertex(vec2(-0.5, -0.5)).unwrap();
+    triangle.add_vertex(vec2(0.5, -0.5)).unwrap();
 
     world.add(triangle);
 
@@ -39,7 +39,7 @@ struct Citizen {
     entity: Entity,
 }
 
-use nalgebra_glm::Vec2;
+use nalgebra_glm::{Vec2, vec2};
 struct World {
     display: Display,
     citizens: Vec<Citizen>,
