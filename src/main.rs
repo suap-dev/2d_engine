@@ -18,15 +18,13 @@ fn main() {
     let event_loop = EventLoop::new();
     let mut world = World::new(&event_loop);
 
-    // let mut triangle = Entity::empty();
-    // triangle.add_vertex(vec2(0.0, 0.5)).unwrap();
-    // triangle.add_vertex(vec2(-0.5, -0.5)).unwrap();
-    // triangle.add_vertex(vec2(0.5, -0.5)).unwrap();
-
-    // world.add(triangle);
+    let mut triangle = Entity::empty();
+    triangle.add_vertex(vec2(0.0, 0.5)).unwrap();
+    triangle.add_vertex(vec2(-0.5, -0.5)).unwrap();
+    triangle.add_vertex(vec2(0.5, -0.5)).unwrap();
 
     let mut circle = Entity::empty();
-    let mut v1 = vec2(0.8, 0.0);
+    let mut v1 = vec2(0.4, 0.0);
     let steps = 32;
     let angle = TAU / steps as f32;
     let rot = Mat2::new(angle.cos(), -angle.sin(), angle.sin(), angle.cos());
@@ -34,6 +32,8 @@ fn main() {
         circle.add_vertex(v1).unwrap();
         v1 = rot * v1;
     }
+
+    world.add(triangle);
     world.add(circle);
 
     event_loop.run(move |event, _, control_flow| {
@@ -61,7 +61,7 @@ impl World {
         let window_builder = WindowBuilder::new();
         let context_builder = ContextBuilder::new();
         Self {
-            display: Display::new(window_builder, context_builder, &event_loop)
+            display: Display::new(window_builder, context_builder, event_loop)
                 .expect("Unable to initialise display."),
             sky_color: (0.0, 0.0, 0.0),
             citizens: Vec::new(),
@@ -93,18 +93,24 @@ impl World {
                 #version 150
 
                 in vec2 position;
+                in vec4 color;
+
+                out vec4 v_color;
 
                 void main() {
+                    v_color = color;
                     gl_Position = vec4(position, 0.0, 1.0);
                 }
             "#,
                 r#"
                 #version 150
 
+                in vec4 v_color;
                 out vec4 color;
 
                 void main() {
-                    color = vec4(1.0, 1.0, 1.0, 1.0);
+                    // color = vec4(1.0, 1.0, 1.0, 1.0);
+                    color = v_color;
                 }
             "#,
                 None,
@@ -117,14 +123,14 @@ impl World {
 
 struct Entity {
     vertices: Vec<Vec2>,
-    color: (f32, f32, f32),
+    color: [f32; 4],
     primitive: Primitive,
 }
 impl Entity {
     const fn empty() -> Self {
         Self {
             vertices: Vec::new(),
-            color: (1.0, 1.0, 1.0),
+            color: [1.0, 1.0, 1.0, 1.0],
             primitive: Primitive::Empty,
         }
     }
@@ -151,7 +157,7 @@ impl Entity {
     }
 
     fn vertex_buffer(&self, display: &Display) -> VertexBuffer<Vertex> {
-        let thingy: Vec<Vertex> = self.vertices.iter().map(|v| (*v).into()).collect();
+        // let thingy: Vec<Vertex> = self.vertices.iter().map(|v| (*v).into()).collect();
         VertexBuffer::new(
             display,
             &self
@@ -176,12 +182,15 @@ enum Primitive {
 #[derive(Clone, Copy)]
 struct Vertex {
     position: [f32; 2],
+    color: [f32; 4],
 }
 impl From<Vec2> for Vertex {
     fn from(value: Vec2) -> Self {
         Self {
             position: value.into(),
+            // color: [1.0; 4]
+            color: [1.0, 0.0, 0.0, 1.0],
         }
     }
 }
-implement_vertex!(Vertex, position);
+implement_vertex!(Vertex, position, color);
