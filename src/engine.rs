@@ -4,11 +4,6 @@ use glium::{
 };
 use nalgebra_glm::Vec2;
 
-struct Citizen {
-    vertex_buffer: VertexBuffer<Vertex>,
-    program: Program,
-    entity: Entity,
-}
 pub struct World {
     display: Display,
     citizens: Vec<Citizen>,
@@ -76,7 +71,6 @@ impl World {
                 out vec4 color;
 
                 void main() {
-                    // color = vec4(1.0, 1.0, 1.0, 1.0);
                     color = v_color;
                 }
             "#,
@@ -88,6 +82,11 @@ impl World {
     }
 }
 
+struct Citizen {
+    vertex_buffer: VertexBuffer<Vertex>,
+    program: Program,
+    entity: Entity,
+}
 pub struct Entity {
     vertices: Vec<Vec2>,
     color: [f32; 4],
@@ -98,6 +97,14 @@ impl Entity {
         Self {
             vertices: Vec::new(),
             color: [1.0, 1.0, 1.0, 1.0],
+            primitive: Primitive::Empty,
+        }
+    }
+
+    pub const fn empty_with_color(color: [f32; 4]) -> Self {
+        Self {
+            vertices: Vec::new(),
+            color,
             primitive: Primitive::Empty,
         }
     }
@@ -125,13 +132,21 @@ impl Entity {
 
     fn vertex_buffer(&self, display: &Display) -> VertexBuffer<Vertex> {
         // let thingy: Vec<Vertex> = self.vertices.iter().map(|v| (*v).into()).collect();
+        let mut data = Vec::new();
+        for vertex in &self.vertices {
+            data.push(Vertex {
+                position: (*vertex).into(),
+                color: self.color,
+            });
+        }
         VertexBuffer::new(
             display,
-            &self
-                .vertices
-                .iter()
-                .map(|v| (*v).into())
-                .collect::<Vec<Vertex>>(),
+            // &self
+            //     .vertices
+            //     .iter()
+            //     .map(|v| (*v).into())
+            //     .collect::<Vec<Vertex>>(),
+            &data,
         )
         .expect("VertexBuffer creation failed.")
     }
@@ -155,8 +170,7 @@ impl From<Vec2> for Vertex {
     fn from(value: Vec2) -> Self {
         Self {
             position: value.into(),
-            // color: [1.0; 4]
-            color: [1.0, 0.0, 0.0, 1.0],
+            color: [1.0, 1.0, 1.0, 1.0], // default color is white
         }
     }
 }
