@@ -1,4 +1,7 @@
-use glium::{VertexBuffer, Program, Display, glutin::{event_loop::EventLoop, window::WindowBuilder, ContextBuilder}, Surface, uniforms::EmptyUniforms, DrawParameters, implement_vertex};
+use glium::{
+    glutin::{event_loop::EventLoop, window::WindowBuilder, ContextBuilder},
+    implement_vertex, uniform, Display, DrawParameters, Program, Surface, VertexBuffer,
+};
 use nalgebra_glm::Vec2;
 
 struct Citizen {
@@ -15,9 +18,11 @@ impl World {
     pub fn new<T>(event_loop: &EventLoop<T>) -> Self {
         let window_builder = WindowBuilder::new();
         let context_builder = ContextBuilder::new();
+        let display = Display::new(window_builder, context_builder, event_loop)
+            .expect("Unable to initialise display.");
+        println!("{:?}", display.get_framebuffer_dimensions());
         Self {
-            display: Display::new(window_builder, context_builder, event_loop)
-                .expect("Unable to initialise display."),
+            display,
             sky_color: (0.0, 0.0, 0.0),
             citizens: Vec::new(),
         }
@@ -25,16 +30,19 @@ impl World {
     pub fn render(&self) {
         let mut frame = self.display.draw();
         frame.clear_color(self.sky_color.0, self.sky_color.1, self.sky_color.2, 1.0);
+        let dimensions = &self.display.get_framebuffer_dimensions();
         for citizen in &self.citizens {
             frame
                 .draw(
                     &citizen.vertex_buffer,
                     glium::index::NoIndices(glium::index::PrimitiveType::TriangleFan),
                     &citizen.program,
-                    &EmptyUniforms,
+                    &uniform! {
+                        u_window_dimensions: [dimensions.0 as f32, dimensions.1 as f32],
+                    },
                     &DrawParameters::default(),
                 )
-                .expect("Unable to draw {inhabitant:?}");
+                .expect(format!("Unable to draw {:?}", citizen.entity.primitive).as_str());
         }
         // frame.draw(_, _, program, uniforms, draw_parameters)
         frame.finish().expect("Unable to finish drawing a frame.");
@@ -52,9 +60,13 @@ impl World {
 
                 out vec4 v_color;
 
+                uniform vec2 u_window_dimensions;
+
                 void main() {
                     v_color = color;
-                    gl_Position = vec4(position, 0.0, 1.0);
+                    float smaller = u_window_dimensions.x > u_window_dimensions.y ? u_window_dimensions.y : u_window_dimensions.x;
+                    vec2 transformed_position = (position/u_window_dimensions)*smaller;
+                    gl_Position = vec4(transformed_position, 0.0, 1.0);
                 }
             "#,
                 r#"
