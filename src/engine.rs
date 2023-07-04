@@ -22,6 +22,7 @@ impl From<Vec2> for Vertex {
 implement_vertex!(Vertex, position, color);
 
 // TODO: are separate structs Citizen and Entity really needed? Figure out and posibly make 1 struct for this functionality
+// TODO: do I really want to keep the whole Entity in the World? do I need to remember it?
 struct Citizen {
     entity: Entity,
     vertex_buffer: VertexBuffer<Vertex>,
@@ -110,8 +111,7 @@ impl World {
             vertex_buffer: self.vertex_buffer(&e),
             entity: e,
         });
-    }    
-
+    }
     fn vertex_buffer(&self, entity: &Entity) -> VertexBuffer<Vertex> {
         let mut data = Vec::new();
         for vertex in &entity.base_shape {
@@ -155,28 +155,11 @@ impl Entity {
         }
     }
 
-    // TODO:
     pub fn polygon(vertices: Vec<Vec2>, color: [f32;4]) -> Self {
-        todo!()
-    }
-
-
-    pub const fn empty() -> Self {
         Self {
-            base_shape: Vec::new(),
-            color: [1.0, 1.0, 1.0, 1.0],
+            base_shape: vertices,
+            color
         }
-    }
-
-    pub const fn empty_with_color(color: [f32; 4]) -> Self {
-        Self {
-            base_shape: Vec::new(),
-            color,
-        }
-    }
-
-    pub fn add_vertex(&mut self, v: Vec2) {
-        self.base_shape.push(v);
     }
 }
 

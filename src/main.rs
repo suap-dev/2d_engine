@@ -14,14 +14,13 @@ fn main() {
     let event_loop = EventLoop::new();
     let mut world = World::new(&event_loop);
 
-    let mut triangle = Entity::empty();
-    triangle.add_vertex(vec2(0.0, 0.5));
-    triangle.add_vertex(vec2(-0.5, -0.5));
-    triangle.add_vertex(vec2(0.5, -0.5));
-
+    let polygon = Entity::polygon(
+        vec![vec2(0.0, 0.5), vec2(-0.5, -0.5), vec2(0.5, -0.5)],
+        [0.2, 0.4, 0.6, 1.0],
+    );
     let circle = Entity::circle([0.0, 0.0].into(), 0.3, [0.8, 0.0, 0.3, 1.0]);
 
-    world.add(triangle);
+    world.add(polygon);
     world.add(circle);
 
     event_loop.run(move |event, _, control_flow| {
