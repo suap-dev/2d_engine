@@ -7,7 +7,7 @@ use nalgebra_glm::Vec2;
 pub struct World {
     display: Display,
     citizens: Vec<Citizen>,
-    sky_color: (f32, f32, f32),
+    sky_color: [f32;4],
 }
 impl World {
     pub fn new<T>(event_loop: &EventLoop<T>) -> Self {
@@ -18,13 +18,13 @@ impl World {
         println!("{:?}", display.get_framebuffer_dimensions());
         Self {
             display,
-            sky_color: (0.0, 0.0, 0.0),
+            sky_color: [0.0,0.0,0.0,1.0],
             citizens: Vec::new(),
         }
     }
     pub fn render(&self) {
         let mut frame = self.display.draw();
-        frame.clear_color(self.sky_color.0, self.sky_color.1, self.sky_color.2, 1.0);
+        frame.clear_color(self.sky_color[0], self.sky_color[1], self.sky_color[2], self.sky_color[3]);
         let dimensions = &self.display.get_framebuffer_dimensions();
         for citizen in &self.citizens {
             frame
