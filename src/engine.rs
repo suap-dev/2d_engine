@@ -4,6 +4,27 @@ use glium::{
 };
 use nalgebra_glm::Vec2;
 
+#[derive(Clone, Copy)]
+struct Vertex {
+    position: [f32; 2],
+    color: [f32; 4],
+}
+impl From<Vec2> for Vertex {
+    fn from(value: Vec2) -> Self {
+        Self {
+            position: value.into(),
+            color: [1.0, 1.0, 1.0, 1.0], // default color is white
+        }
+    }
+}
+implement_vertex!(Vertex, position, color);
+
+// TODO: are separate structs Citizen and Entity really needed? Figure out and posibly make 1 struct for this functionality
+struct Citizen {
+    entity: Entity,
+    vertex_buffer: VertexBuffer<Vertex>,
+}
+
 pub struct World {
     display: Display,
     citizens: Vec<Citizen>,
@@ -84,51 +105,23 @@ impl World {
     }
     pub fn add(&mut self, e: Entity) {
         self.citizens.push(Citizen {
-            vertex_buffer: e.vertex_buffer(&self.display),
+            // vertex_buffer: e.vertex_buffer(&self.display),
+            vertex_buffer: self.vertex_buffer(&e),
             entity: e,
         });
-    }
-}
+    }    
 
-// TODO: are separate structs Citizen and Entity really needed? Figure out and posibly make 1 struct for this functionality
-struct Citizen {
-    vertex_buffer: VertexBuffer<Vertex>,
-    entity: Entity,
-}
-pub struct Entity {
-    vertices: Vec<Vec2>,
-    color: [f32; 4],
-}
-impl Entity {
-    pub const fn empty() -> Self {
-        Self {
-            vertices: Vec::new(),
-            color: [1.0, 1.0, 1.0, 1.0],
-        }
-    }
-
-    pub const fn empty_with_color(color: [f32; 4]) -> Self {
-        Self {
-            vertices: Vec::new(),
-            color,
-        }
-    }
-
-    pub fn add_vertex(&mut self, v: Vec2) {
-        self.vertices.push(v);
-    }
-
-    fn vertex_buffer(&self, display: &Display) -> VertexBuffer<Vertex> {
+    fn vertex_buffer(&self, entity: &Entity) -> VertexBuffer<Vertex> {
         // let thingy: Vec<Vertex> = self.vertices.iter().map(|v| (*v).into()).collect();
         let mut data = Vec::new();
-        for vertex in &self.vertices {
+        for vertex in entity.base_shape {
             data.push(Vertex {
-                position: (*vertex).into(),
-                color: self.color,
+                position: vertex.into(),
+                color: entity.color,
             });
         }
         VertexBuffer::new(
-            display,
+            &self.display,
             // &self
             //     .vertices
             //     .iter()
@@ -140,17 +133,27 @@ impl Entity {
     }
 }
 
-#[derive(Clone, Copy)]
-struct Vertex {
-    position: [f32; 2],
+pub struct Entity {
+    base_shape: Vec<Vec2>,
     color: [f32; 4],
 }
-impl From<Vec2> for Vertex {
-    fn from(value: Vec2) -> Self {
+impl Entity {
+    pub const fn empty() -> Self {
         Self {
-            position: value.into(),
-            color: [1.0, 1.0, 1.0, 1.0], // default color is white
+            base_shape: Vec::new(),
+            color: [1.0, 1.0, 1.0, 1.0],
         }
     }
+
+    pub const fn empty_with_color(color: [f32; 4]) -> Self {
+        Self {
+            base_shape: Vec::new(),
+            color,
+        }
+    }
+
+    pub fn add_vertex(&mut self, v: Vec2) {
+        self.base_shape.push(v);
+    }
 }
-implement_vertex!(Vertex, position, color);
+
