@@ -9,17 +9,15 @@ use nalgebra_glm::{Vec2, vec2, mat2};
 #[derive(Clone, Copy)]
 struct Vertex {
     position: [f32; 2],
-    color: [f32; 4],
 }
 impl From<Vec2> for Vertex {
     fn from(value: Vec2) -> Self {
         Self {
             position: value.into(),
-            color: [1.0, 1.0, 1.0, 1.0], // default color is white
         }
     }
 }
-implement_vertex!(Vertex, position, color);
+implement_vertex!(Vertex, position);//, color);
 
 // TODO: are separate structs Citizen and Entity really needed? Figure out and posibly make 1 struct for this functionality
 // TODO: do I really want to keep the whole Entity in the World? do I need to remember it?
@@ -28,6 +26,7 @@ struct Citizen {
     vertex_buffer: VertexBuffer<Vertex>,
 }
 
+#[derive(Clone, Copy)]
 pub struct CitizenId (usize);
 
 pub struct World {
@@ -51,14 +50,11 @@ impl World {
             #version 150
 
             in vec2 position;
-            in vec4 color;
-
-            out vec4 v_color;
 
             uniform vec2 u_window_dimensions;
 
             void main() {
-                v_color = color;
+                // v_color = color;
                 float smaller = u_window_dimensions.x > u_window_dimensions.y ? u_window_dimensions.y : u_window_dimensions.x;
                 vec2 transformed_position = (position/u_window_dimensions)*smaller;
                 gl_Position = vec4(transformed_position, 0.0, 1.0);
@@ -67,11 +63,13 @@ impl World {
             r#"
             #version 150
 
-            in vec4 v_color;
+            uniform vec4 u_color;
+
             out vec4 color;
 
             void main() {
-                color = v_color;
+                // color = vec4(1.0, 1.0, 1.0, 1.0);
+                color = u_color;
             }
         "#,
             None,
@@ -103,6 +101,7 @@ impl World {
                     &self.program,
                     &uniform! {
                         u_window_dimensions: [dimensions.0 as f32, dimensions.1 as f32],
+                        u_color: citizen.1.entity.color,
                     },
                     &DrawParameters::default(),
                 )
@@ -123,7 +122,6 @@ impl World {
         for vertex in &entity.base_shape {
             data.push(Vertex {
                 position: (*vertex).into(),
-                color: entity.color,
             });
         }
         VertexBuffer::new(
@@ -131,6 +129,15 @@ impl World {
             &data,
         )
         .expect("VertexBuffer creation failed.")
+    }
+    pub fn translate_citizen(&mut self, id: CitizenId, vector: Vec2) {
+        let id = id.0;
+        let citizen = self.citizens.get_mut(&id);
+        if let Some(citizen) = citizen {            
+            citizen.entity.translate(vector);
+            let vecnew: Vec<Vertex> = citizen.entity.base_shape.iter().map(|t| (*t).into()).collect();
+            citizen.vertex_buffer.write(&vecnew);
+        }
     }
 }
 
@@ -177,6 +184,12 @@ impl Entity {
                 vec2(origin.x + width/2.0, origin.y + height/2.0),
             ],
             color,
+        }
+    }
+
+    pub fn translate(&mut self, vector: Vec2) {
+        for vertex_position in &mut self.base_shape {
+            *vertex_position += vector;
         }
     }
 }

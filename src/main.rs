@@ -25,6 +25,7 @@ fn main() {
     let rectangle = world.add(rectangle);
 
     event_loop.run(move |event, _, control_flow| {
+        world.translate_citizen(rectangle, vec2(0.0001, 0.0));
         world.render();
         if let event::Event::WindowEvent { event, .. } = event {
             if let event::WindowEvent::CloseRequested = event {
