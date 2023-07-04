@@ -8,6 +8,7 @@ pub struct World {
     display: Display,
     citizens: Vec<Citizen>,
     sky_color: [f32; 4],
+    program: Program,
 }
 impl World {
     pub fn new<T>(event_loop: &EventLoop<T>) -> Self {
@@ -16,8 +17,42 @@ impl World {
         let display = Display::new(window_builder, context_builder, event_loop)
             .expect("Unable to initialise display.");
         println!("{:?}", display.get_framebuffer_dimensions());
+        let program = Program::from_source(
+            &display,
+            r#"
+            #version 150
+
+            in vec2 position;
+            in vec4 color;
+
+            out vec4 v_color;
+
+            uniform vec2 u_window_dimensions;
+
+            void main() {
+                v_color = color;
+                float smaller = u_window_dimensions.x > u_window_dimensions.y ? u_window_dimensions.y : u_window_dimensions.x;
+                vec2 transformed_position = (position/u_window_dimensions)*smaller;
+                gl_Position = vec4(transformed_position, 0.0, 1.0);
+            }
+        "#,
+            r#"
+            #version 150
+
+            in vec4 v_color;
+            out vec4 color;
+
+            void main() {
+                color = v_color;
+            }
+        "#,
+            None,
+            
+        )
+        .expect("Program creation error.");
         Self {
             display,
+            program, 
             sky_color: [0.0, 0.0, 0.0, 1.0],
             citizens: Vec::new(),
         }
@@ -36,7 +71,7 @@ impl World {
                 .draw(
                     &citizen.vertex_buffer,
                     glium::index::NoIndices(glium::index::PrimitiveType::TriangleFan),
-                    &citizen.program,
+                    &self.program,
                     &uniform! {
                         u_window_dimensions: [dimensions.0 as f32, dimensions.1 as f32],
                     },
@@ -50,46 +85,14 @@ impl World {
     pub fn add(&mut self, e: Entity) {
         self.citizens.push(Citizen {
             vertex_buffer: e.vertex_buffer(&self.display),
-            program: Program::from_source(
-                &self.display,
-                r#"
-                #version 150
-
-                in vec2 position;
-                in vec4 color;
-
-                out vec4 v_color;
-
-                uniform vec2 u_window_dimensions;
-
-                void main() {
-                    v_color = color;
-                    float smaller = u_window_dimensions.x > u_window_dimensions.y ? u_window_dimensions.y : u_window_dimensions.x;
-                    vec2 transformed_position = (position/u_window_dimensions)*smaller;
-                    gl_Position = vec4(transformed_position, 0.0, 1.0);
-                }
-            "#,
-                r#"
-                #version 150
-
-                in vec4 v_color;
-                out vec4 color;
-
-                void main() {
-                    color = v_color;
-                }
-            "#,
-                None,
-            )
-            .expect("Program creation error."),
             entity: e,
         });
     }
 }
 
+// TODO: are separate structs Citizen and Entity really needed? Figure out and posibly make 1 struct for this functionality
 struct Citizen {
     vertex_buffer: VertexBuffer<Vertex>,
-    program: Program,
     entity: Entity,
 }
 pub struct Entity {
