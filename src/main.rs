@@ -19,7 +19,7 @@ fn main() {
     triangle.add_vertex(vec2(-0.5, -0.5)).unwrap();
     triangle.add_vertex(vec2(0.5, -0.5)).unwrap();
 
-    let mut circle = Entity::empty();
+    let mut circle = Entity::empty_with_color([1.0, 0.0, 0.0, 1.0]);
     let mut v1 = vec2(0.4, 0.0);
     let steps = 32;
     let angle = TAU / steps as f32;
