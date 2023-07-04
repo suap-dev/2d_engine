@@ -130,6 +130,7 @@ impl World {
         )
         .expect("VertexBuffer creation failed.")
     }
+    // TODO: for optimisation purposes this could be done on CPU or GPU depending on whether Citizen taking part in pysics simulation or not
     pub fn translate_citizen(&mut self, id: CitizenId, vector: Vec2) {
         let id = id.0;
         let citizen = self.citizens.get_mut(&id);
