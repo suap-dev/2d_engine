@@ -161,5 +161,17 @@ impl Entity {
             color
         }
     }
+
+    pub fn rectangle(origin: Vec2, width: f32, height: f32, color: [f32; 4]) -> Self {
+        Self{
+            base_shape: vec![
+                vec2(origin.x - width/2.0, origin.y + height/2.0),
+                vec2(origin.x - width/2.0, origin.y - height/2.0),
+                vec2(origin.x + width/2.0, origin.y - height/2.0),
+                vec2(origin.x + width/2.0, origin.y + height/2.0),
+            ],
+            color,
+        }
+    }
 }
 
