@@ -139,14 +139,14 @@ impl Entity {
 
         let mut base_shape: Vec<Vec2> = Vec::new();
 
-        let mut temp_vertex_position = origin + vec2(0.0, radius);
+        let mut temp_vertex_position = vec2(0.0, radius);
         let rotation_matrix = mat2(angle.cos(), -angle.sin(), angle.sin(), angle.cos());
 
-        base_shape.push(temp_vertex_position);  // 0-th vertex
+        base_shape.push(temp_vertex_position + origin);  // 0-th vertex
 
         for _ in 1..VERTICES {
             temp_vertex_position = rotation_matrix * temp_vertex_position;
-            base_shape.push(temp_vertex_position);
+            base_shape.push(temp_vertex_position + origin);
         }
 
         Self {

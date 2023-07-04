@@ -18,7 +18,7 @@ fn main() {
         vec![vec2(0.0, 0.5), vec2(-0.5, -0.5), vec2(0.5, -0.5)],
         [0.2, 0.4, 0.6, 1.0],
     );
-    let circle = Entity::circle([0.0, 0.0].into(), 0.3, [0.8, 0.0, 0.3, 1.0]);
+    let circle = Entity::circle([0.4, 0.4].into(), 0.2, [0.8, 0.0, 0.3, 1.0]);
 
     world.add(polygon);
     world.add(circle);
