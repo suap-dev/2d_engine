@@ -19,15 +19,7 @@ fn main() {
     triangle.add_vertex(vec2(-0.5, -0.5));
     triangle.add_vertex(vec2(0.5, -0.5));
 
-    let mut circle = Entity::empty_with_color([1.0, 0.0, 0.0, 1.0]);
-    let mut v1 = vec2(0.4, 0.0);
-    let steps = 32;
-    let angle = TAU / steps as f32;
-    let rot = Mat2::new(angle.cos(), -angle.sin(), angle.sin(), angle.cos());
-    for _step in 0..steps {
-        circle.add_vertex(v1);
-        v1 = rot * v1;
-    }
+    let circle = Entity::circle([0.0, 0.0].into(), 0.3, [0.8, 0.0, 0.3, 1.0]);
 
     world.add(triangle);
     world.add(circle);
