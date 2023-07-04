@@ -20,9 +20,9 @@ fn main() {
     let circle = Entity::circle([0.4, 0.4].into(), 0.2, [0.8, 0.0, 0.3, 1.0]);
     let rectangle = Entity::rectangle([-0.4, 0.4].into(), 0.2, 0.3, [0.8, 0.4, 0.3, 1.0]);
 
-    world.add(polygon);
-    world.add(circle);
-    world.add(rectangle);
+    let polygon = world.add(polygon);
+    let circle = world.add(circle);
+    let rectangle = world.add(rectangle);
 
     event_loop.run(move |event, _, control_flow| {
         world.render();

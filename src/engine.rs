@@ -1,4 +1,4 @@
-use std::f32::consts::TAU;
+use std::{f32::consts::TAU, collections::HashMap};
 
 use glium::{
     glutin::{event_loop::EventLoop, window::WindowBuilder, ContextBuilder},
@@ -28,11 +28,14 @@ struct Citizen {
     vertex_buffer: VertexBuffer<Vertex>,
 }
 
+pub struct CitizenId (usize);
+
 pub struct World {
     display: Display,
-    citizens: Vec<Citizen>,
+    citizens: HashMap<usize, Citizen>,
     sky_color: [f32; 4],
     program: Program,
+    hash: usize
 }
 impl World {
     pub fn new<T>(event_loop: &EventLoop<T>) -> Self {
@@ -79,7 +82,8 @@ impl World {
             display,
             program, 
             sky_color: [0.0, 0.0, 0.0, 1.0],
-            citizens: Vec::new(),
+            citizens: HashMap::new(),
+            hash: 0,
         }
     }
     pub fn render(&self) {
@@ -94,7 +98,7 @@ impl World {
         for citizen in &self.citizens {
             frame
                 .draw(
-                    &citizen.vertex_buffer,
+                    &citizen.1.vertex_buffer,
                     glium::index::NoIndices(glium::index::PrimitiveType::TriangleFan),
                     &self.program,
                     &uniform! {
@@ -106,11 +110,13 @@ impl World {
         }
         frame.finish().expect("Unable to finish drawing a frame.");
     }
-    pub fn add(&mut self, e: Entity) {
-        self.citizens.push(Citizen {
+    pub fn add(&mut self, e: Entity) -> CitizenId {
+        self.hash += 1;
+        self.citizens.insert(self.hash, Citizen {
             vertex_buffer: self.vertex_buffer(&e),
             entity: e,
         });
+        CitizenId(self.hash)
     }
     fn vertex_buffer(&self, entity: &Entity) -> VertexBuffer<Vertex> {
         let mut data = Vec::new();
