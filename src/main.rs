@@ -15,9 +15,9 @@ fn main() {
     let mut world = World::new(&event_loop);
 
     let mut triangle = Entity::empty();
-    triangle.add_vertex(vec2(0.0, 0.5)).unwrap();
-    triangle.add_vertex(vec2(-0.5, -0.5)).unwrap();
-    triangle.add_vertex(vec2(0.5, -0.5)).unwrap();
+    triangle.add_vertex(vec2(0.0, 0.5));
+    triangle.add_vertex(vec2(-0.5, -0.5));
+    triangle.add_vertex(vec2(0.5, -0.5));
 
     let mut circle = Entity::empty_with_color([1.0, 0.0, 0.0, 1.0]);
     let mut v1 = vec2(0.4, 0.0);
@@ -25,7 +25,7 @@ fn main() {
     let angle = TAU / steps as f32;
     let rot = Mat2::new(angle.cos(), -angle.sin(), angle.sin(), angle.cos());
     for _step in 0..steps {
-        circle.add_vertex(v1).unwrap();
+        circle.add_vertex(v1);
         v1 = rot * v1;
     }
 

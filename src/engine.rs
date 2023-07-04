@@ -77,7 +77,7 @@ impl World {
                     },
                     &DrawParameters::default(),
                 )
-                .expect(format!("Unable to draw {:?}", citizen.entity.primitive).as_str());
+                .expect("Unable to draw this entity.");
         }
         // frame.draw(_, _, program, uniforms, draw_parameters)
         frame.finish().expect("Unable to finish drawing a frame.");
@@ -98,14 +98,12 @@ struct Citizen {
 pub struct Entity {
     vertices: Vec<Vec2>,
     color: [f32; 4],
-    primitive: Primitive,
 }
 impl Entity {
     pub const fn empty() -> Self {
         Self {
             vertices: Vec::new(),
             color: [1.0, 1.0, 1.0, 1.0],
-            primitive: Primitive::Empty,
         }
     }
 
@@ -113,29 +111,11 @@ impl Entity {
         Self {
             vertices: Vec::new(),
             color,
-            primitive: Primitive::Empty,
         }
     }
 
-    pub fn add_vertex(&mut self, v: Vec2) -> Result<Primitive, Primitive> {
-        match self.primitive {
-            Primitive::Circle => Err(Primitive::Circle),
-            Primitive::Empty => {
-                self.vertices.push(v);
-                self.primitive = Primitive::Point;
-                Ok(Primitive::Point)
-            }
-            Primitive::Point => {
-                self.vertices.push(v);
-                self.primitive = Primitive::Line;
-                Ok(Primitive::Line)
-            }
-            Primitive::Line | Primitive::Polygon => {
-                self.vertices.push(v);
-                self.primitive = Primitive::Polygon;
-                Ok(Primitive::Polygon)
-            }
-        }
+    pub fn add_vertex(&mut self, v: Vec2) {
+        self.vertices.push(v);
     }
 
     fn vertex_buffer(&self, display: &Display) -> VertexBuffer<Vertex> {
@@ -158,15 +138,6 @@ impl Entity {
         )
         .expect("VertexBuffer creation failed.")
     }
-}
-
-#[derive(Debug)]
-pub enum Primitive {
-    Empty,
-    Point,
-    Line,
-    Polygon,
-    Circle,
 }
 
 #[derive(Clone, Copy)]
