@@ -2,13 +2,13 @@
 
 mod engine;
 
+use engine::{Entity, World};
 use glium::glutin::{
     event,
     event_loop::{ControlFlow, EventLoop},
 };
 use nalgebra_glm::{vec2, Mat2};
 use std::f32::consts::TAU;
-use engine::*;
 
 fn main() {
     let event_loop = EventLoop::new();
