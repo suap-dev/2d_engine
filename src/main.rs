@@ -26,9 +26,11 @@ fn main() {
     let triangle = world.add(triangle);
 
     let mut mouse_position = PhysicalPosition::new(-1.0, -1.0);
+
     event_loop.run(move |event, _, control_flow| {
         world.translate_citizen(rectangle, vec2(0.00006, 0.0));
         world.render();
+
         if let event::Event::WindowEvent { event, .. } = event {
             match event {
                 event::WindowEvent::CloseRequested => {
@@ -52,6 +54,9 @@ fn main() {
                     println!(" - state: {:?}", state);
                     println!(" - position: {:?}", mouse_position);
                     println!();
+                }
+                event::WindowEvent::Resized(physical_size) => {
+                    world.handle_resize(physical_size);
                 }
                 _ => {}
             }

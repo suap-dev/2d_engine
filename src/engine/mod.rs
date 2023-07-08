@@ -1,12 +1,9 @@
 pub mod world;
 
-use std::{f32::consts::TAU, collections::HashMap};
+use std::f32::consts::TAU;
 
-use glium::{
-    glutin::{event_loop::EventLoop, window::WindowBuilder, ContextBuilder},
-    implement_vertex, uniform, Display, DrawParameters, Program, Surface, VertexBuffer,
-};
-use nalgebra_glm::{Vec2, vec2, mat2};
+use glium::implement_vertex;
+use nalgebra_glm::{mat2, vec2, Vec2};
 
 #[derive(Clone, Copy)]
 struct Vertex {
@@ -19,14 +16,14 @@ impl From<Vec2> for Vertex {
         }
     }
 }
-implement_vertex!(Vertex, position);//, color);
+implement_vertex!(Vertex, position); //, color);
 
 pub struct Entity {
     base_shape: Vec<Vec2>,
     color: [f32; 4],
 }
 impl Entity {
-    pub fn circle(origin: Vec2, radius: f32, color: [f32; 4]) -> Self{        
+    pub fn circle(origin: Vec2, radius: f32, color: [f32; 4]) -> Self {
         const VERTICES: usize = 32;
         let angle = TAU / VERTICES as f32;
 
@@ -35,33 +32,30 @@ impl Entity {
         let mut temp_vertex_position = vec2(0.0, radius);
         let rotation_matrix = mat2(angle.cos(), -angle.sin(), angle.sin(), angle.cos());
 
-        base_shape.push(temp_vertex_position + origin);  // 0-th vertex
+        base_shape.push(temp_vertex_position + origin); // 0-th vertex
 
         for _ in 1..VERTICES {
             temp_vertex_position = rotation_matrix * temp_vertex_position;
             base_shape.push(temp_vertex_position + origin);
         }
 
+        Self { base_shape, color }
+    }
+
+    pub fn polygon(vertices: Vec<Vec2>, color: [f32; 4]) -> Self {
         Self {
-            base_shape,
+            base_shape: vertices,
             color,
         }
     }
 
-    pub fn polygon(vertices: Vec<Vec2>, color: [f32;4]) -> Self {
-        Self {
-            base_shape: vertices,
-            color
-        }
-    }
-
     pub fn rectangle(origin: Vec2, width: f32, height: f32, color: [f32; 4]) -> Self {
-        Self{
+        Self {
             base_shape: vec![
-                vec2(origin.x - width/2.0, origin.y + height/2.0),
-                vec2(origin.x - width/2.0, origin.y - height/2.0),
-                vec2(origin.x + width/2.0, origin.y - height/2.0),
-                vec2(origin.x + width/2.0, origin.y + height/2.0),
+                vec2(origin.x - width / 2.0, origin.y + height / 2.0),
+                vec2(origin.x - width / 2.0, origin.y - height / 2.0),
+                vec2(origin.x + width / 2.0, origin.y - height / 2.0),
+                vec2(origin.x + width / 2.0, origin.y + height / 2.0),
             ],
             color,
         }
@@ -73,4 +67,3 @@ impl Entity {
         }
     }
 }
-
