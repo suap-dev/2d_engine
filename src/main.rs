@@ -2,17 +2,17 @@
 
 mod engine;
 
-use engine::{Entity, World};
+use engine::{world, Entity};
 use glium::glutin::{
     dpi::PhysicalPosition,
-    event::{self, ElementState},
+    event,
     event_loop::{ControlFlow, EventLoop},
 };
 use nalgebra_glm::vec2;
 
 fn main() {
     let event_loop = EventLoop::new();
-    let mut world = World::new(&event_loop);
+    let mut world = world::World::new(&event_loop);
 
     let triangle = Entity::polygon(
         vec![vec2(0.0, 0.5), vec2(-0.5, -0.5), vec2(0.5, -0.5)],
@@ -24,7 +24,6 @@ fn main() {
     let circle = world.add(circle);
     let rectangle = world.add(rectangle);
     let triangle = world.add(triangle);
-
 
     let mut mouse_position = PhysicalPosition::new(-1.0, -1.0);
     event_loop.run(move |event, _, control_flow| {
