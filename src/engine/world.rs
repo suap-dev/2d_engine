@@ -14,7 +14,7 @@ struct Citizen {
     shape: Shape,
     position: Vec2,
     velocity: Vec2,
-    vertex_buffer: VertexBuffer<Vertex>,
+    // vertex_buffer: VertexBuffer<Vertex>,
 }
 
 #[derive(Clone, Copy)]
@@ -31,6 +31,7 @@ pub struct World {
     width: f32,
     height: f32,
     gravity: Vec2,
+    circle_vertex_buffer: Option<VertexBuffer<Vertex>>,
 }
 
 impl World {
@@ -79,11 +80,12 @@ impl World {
             width: WORLD_DIMENSIONS[0] as f32,
             height: WORLD_DIMENSIONS[1] as f32,
             gravity: vec2(0.0, -0.001),
+            circle_vertex_buffer: None,
         }
     }
     pub fn update(&mut self, dt: Duration) {
         for citizen in self.citizens.values_mut() {
-            citizen.velocity += self.gravity * dt.as_secs_f32();            
+            citizen.velocity += self.gravity * dt.as_secs_f32();
             citizen.position += citizen.velocity;
         }
     }
@@ -95,28 +97,31 @@ impl World {
             self.sky_color[2],
             self.sky_color[3],
         );
-        for citizen in self.citizens.values() {
-            frame
-                .draw(
-                    &citizen.vertex_buffer,
-                    glium::index::NoIndices(glium::index::PrimitiveType::TriangleFan),
-                    &self.program,
-                    &uniform! {
-                        u_color: citizen.shape.color,
-                        u_shape_origin: [citizen.position.x, citizen.position.y],
-                    },
-                    &DrawParameters::default(),
-                )
-                .expect("Unable to draw this entity.");
+        if let Some(vb) = &self.circle_vertex_buffer {
+            for citizen in self.citizens.values() {
+                frame
+                    .draw(
+                        vb,
+                        glium::index::NoIndices(glium::index::PrimitiveType::TriangleFan),
+                        &self.program,
+                        &uniform! {
+                            u_color: citizen.shape.color,
+                            u_shape_origin: [citizen.position.x, citizen.position.y],
+                        },
+                        &DrawParameters::default(),
+                    )
+                    .expect("Unable to draw this entity.");
+            }
         }
         frame.finish().expect("Unable to finish drawing a frame.");
     }
     pub fn add(&mut self, shape: Shape, position: Vec2) -> CitizenId {
-        self.hash += 1;
+        self.hash += 1;        
+        self.circle_vertex_buffer = Some(self.vertex_buffer(&shape));
         self.citizens.insert(
             self.hash,
             Citizen {
-                vertex_buffer: self.vertex_buffer(&shape),
+                // vertex_buffer: self.vertex_buffer(&shape),
                 shape,
                 position,
                 velocity: vec2(0.0, 0.0),
