@@ -15,15 +15,10 @@ pub struct Shape {
     pivot_point: Vec2,
     rotation: f32,
 }
-const VERTICES_OF_A_CIRCLE: u32 = 8;
-pub const CIRCLE_INDICES: [u16; 18] =
-[
-    0, 1, 2,
-    0, 2, 3,
-    0, 3, 4,
-    0, 4, 5,
-    0, 5, 6,
-    0, 6, 7,
+pub const VERTICES_OF_A_CIRCLE: u16 = 8;
+pub const CIRCLE_INDICES: [u16; 18] = [
+    0, 1, 2, 0, 2, 3, 0, 3, 4, 0, 4, 5, 0, 5, 6, 0, 6,
+    7,
     // 0, 7, 8,
     // 0, 8, 9,
     // 0, 9, 10,
@@ -34,7 +29,6 @@ pub const CIRCLE_INDICES: [u16; 18] =
     // 0, 14, 15,
     // 0, 15, 16,
     // 0, 16, 17
-
 ];
 impl Shape {
     pub fn polygon(vertices: Vec<Vec2>, color: [f32; 4]) -> Self {

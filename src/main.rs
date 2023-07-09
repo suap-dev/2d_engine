@@ -7,13 +7,12 @@ use std::time::Instant;
 use engine::world;
 use glium::glutin::{
     dpi::PhysicalPosition,
-    event::{self, ElementState},
+    event,
     event_loop::{ControlFlow, EventLoop},
 };
 use nalgebra_glm::vec2;
 
 fn main() {
-
     let event_loop = EventLoop::new();
     let mut world = world::World::new(&event_loop);
 
@@ -24,8 +23,8 @@ fn main() {
         debug_iterations += 1;
         let dt = now.elapsed();
         now = Instant::now();
-        
-        let mut update_instant = Instant::now();
+
+        let update_instant = Instant::now();
         world.update(dt);
         let update_time = update_instant.elapsed();
 
@@ -34,6 +33,7 @@ fn main() {
         let render_time = render_instant.elapsed();
 
         if debug_iterations % 4_000 == 0 {
+            println!("nr of objects: {:?}", world.citizens_number());
             println!("loop time: {:?}", dt);
             println!("update time: {:?}", update_time);
             println!("render time: {:?}", render_time);
@@ -45,6 +45,7 @@ fn main() {
                 event::WindowEvent::CloseRequested => {
                     *control_flow = ControlFlow::Exit;
                 }
+                #[allow(deprecated)]
                 event::WindowEvent::CursorMoved {
                     device_id: _,
                     position,
@@ -52,17 +53,16 @@ fn main() {
                 } => {
                     mouse_position = position;
                 }
+                #[allow(deprecated)]
                 event::WindowEvent::MouseInput {
                     device_id: _,
                     state,
                     button,
                     modifiers: _,
                 } => {
-                    // if state == ElementState::Released {
-                    world.add_default(
+                    world.add_obj_at(
                         world.to_gl_coords(vec2(mouse_position.x as f32, mouse_position.y as f32)),
                     );
-                    // }
                 }
                 _ => {}
             }
