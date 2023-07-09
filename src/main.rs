@@ -5,7 +5,7 @@ mod engine;
 use engine::world;
 use glium::glutin::{
     dpi::PhysicalPosition,
-    event,
+    event::{self, ElementState},
     event_loop::{ControlFlow, EventLoop},
 };
 use nalgebra_glm::vec2;
@@ -60,9 +60,14 @@ fn main() {
                     button,
                     modifiers: _,
                 } => {
-                    world.add_obj_at(
-                        world.to_gl_coords(vec2(mouse_position.x as f32, mouse_position.y as f32)),
-                    );
+                    if state == ElementState::Released {
+                        world.add_obj_at(
+                            world.to_gl_coords(vec2(
+                                mouse_position.x as f32,
+                                mouse_position.y as f32,
+                            )),
+                        );
+                    }
                 }
                 _ => {}
             }

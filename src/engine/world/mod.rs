@@ -14,15 +14,28 @@ use std::{collections::HashMap, time::Duration};
 
 struct Citizen {
     position: Vec2,
+    previous_position: Vec2,
+    acceleration: Vec2,
     velocity: Vec2,
     color: [f32; 4],
 }
+impl Citizen {
+    fn update_position(&mut self, dt: Duration) {
+        let delta_position = self.position - self.previous_position;
+        let dt = dt.as_secs_f32();
+        self.previous_position = self.position;
+        
+        self.position = self.position + delta_position + self.acceleration * dt * dt;
+        self.acceleration.fill(0.0);
+    }
+}
+
 
 #[derive(Clone, Copy)]
 pub struct CitizenId(usize);
 
 const WORLD_DIMENSIONS: [u32; 2] = [1000, 1000];
-const GRAVITY: Vec2 = Vec2::new(0.0, -0.001);
+const GRAVITY: Vec2 = Vec2::new(0.0, -0.2);
 const RADIUS: f32 = 0.01;
 pub struct World {
     pub display: Display,
@@ -65,16 +78,18 @@ impl World {
     }
     pub fn update(&mut self, dt: Duration) {
         self.citizens.retain(|_, citizen| {
-            citizen.velocity += self.gravity * dt.as_secs_f32();
-            citizen.position += citizen.velocity;
+            // citizen.velocity += self.gravity * dt.as_secs_f32();
+            // citizen.position += citizen.velocity;
 
-            if citizen.velocity.y < -0.0015 {
-                citizen.velocity.y = -0.0015;
-            }
+            // if citizen.velocity.y < -0.0015 {
+            //     citizen.velocity.y = -0.0015;
+            // }
 
-            if citizen.position.y.abs() > 0.99 {
-                citizen.position.y = 0.98;
+            if citizen.position.y < -0.90 {
+                citizen.position.y = -0.9;
             };
+            citizen.acceleration += self.gravity;
+            citizen.update_position(dt);
 
             // which citizens to retain:
             // !(citizen.position.x.abs() > 1.0 || citizen.position.y.abs() > 1.0)
@@ -114,6 +129,8 @@ impl World {
             position,
             velocity: vec2(0.0, 0.0),
             color: self.default_shape.color,
+            acceleration: vec2(0.0, 0.0),
+            previous_position: position,
         };
         self.citizens.insert(self.hash, new_citizen);
 
