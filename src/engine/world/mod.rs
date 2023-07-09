@@ -118,7 +118,7 @@ impl World {
         self.citizens.insert(self.hash, new_citizen);
 
         self.rewrite_vertex_buffer();
-        self.rewwrite_index_buffer();
+        self.rewrite_index_buffer();
     }
     fn rewrite_vertex_buffer(&mut self) {
         let mut vertices: Vec<Vertex> = Vec::new();
@@ -133,7 +133,7 @@ impl World {
                 .expect("Function rewrite_vertex_buffer() failed to create buffer."),
         );
     }
-    fn rewwrite_index_buffer(&mut self) {
+    fn rewrite_index_buffer(&mut self) {
         let mut indices: Vec<u16> = Vec::new();
         let citizens = self.citizens.len();
         for citizen_nr in 0..citizens {
