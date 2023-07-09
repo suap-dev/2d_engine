@@ -4,7 +4,7 @@ mod engine;
 
 use std::time::Instant;
 
-use engine::{shape::Shape, world};
+use engine::world;
 use glium::glutin::{
     dpi::PhysicalPosition,
     event::{self, ElementState},
@@ -18,12 +18,26 @@ fn main() {
 
     let mut mouse_position = PhysicalPosition::new(-1.0, -1.0);
     let mut now = Instant::now();
+    let mut debug_iterations: usize = 0;
     event_loop.run(move |event, _, control_flow| {
+        debug_iterations += 1;
         let dt = now.elapsed();
         now = Instant::now();
-
+        
+        let mut update_instant = Instant::now();
         world.update(dt);
+        let update_time = update_instant.elapsed();
+
+        let render_instant = Instant::now();
         world.render();
+        let render_time = render_instant.elapsed();
+
+        if debug_iterations % 4_000 == 0 {
+            println!("loop time: {:?}", dt);
+            println!("update time: {:?}", update_time);
+            println!("render time: {:?}", render_time);
+            println!();
+        };
 
         if let event::Event::WindowEvent { event, .. } = event {
             match event {
@@ -43,21 +57,11 @@ fn main() {
                     button,
                     modifiers: _,
                 } => {
-                    println!("Mouse:");
-                    println!(" - button: {:?}", button);
-                    println!(" - state: {:?}", state);
-                    println!(" - position: {:?}", mouse_position);
-                    println!();
-
-                    if state == ElementState::Released {
-                        world.add(
-                            Shape::circle(0.01, [1.0, 0.0, 0.0, 1.1]),
-                            world.to_gl_coords(vec2(
-                                mouse_position.x as f32,
-                                mouse_position.y as f32,
-                            )),
-                        );
-                    }
+                    // if state == ElementState::Released {
+                    world.add_default(
+                        world.to_gl_coords(vec2(mouse_position.x as f32, mouse_position.y as f32)),
+                    );
+                    // }
                 }
                 _ => {}
             }

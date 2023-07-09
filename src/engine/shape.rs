@@ -12,17 +12,17 @@ use nalgebra_glm::{mat2, vec2, Vec2};
 pub struct Shape {
     pub vertices: Vec<Vec2>,
     pub color: [f32; 4],
-    // pivot_point: Vec2,
-    // rotation: 0.0,
+    pivot_point: Vec2,
+    rotation: f32,
 }
-const VERTICES_OF_A_CIRCLE: u32 = 16;
+const VERTICES_OF_A_CIRCLE: u32 = 24;
 impl Shape {
     pub fn polygon(vertices: Vec<Vec2>, color: [f32; 4]) -> Self {
         Self {
             vertices,
             color,
-            // pivot_point: Vec2::new(0.0, 0.0),
-            // rotation: 0.0,
+            pivot_point: vec2(0.0, 0.0),
+            rotation: 0.0,
         }
     }
     pub fn circle(radius: f32, color: [f32; 4]) -> Self {
@@ -45,7 +45,12 @@ impl Shape {
             vertices.push(temp_vertex_position);
         }
 
-        Self { vertices, color }
+        Self {
+            vertices,
+            color,
+            pivot_point: vec2(0.0, 0.0),
+            rotation: 0.0,
+        }
     }
     pub fn rectangle(width: f32, height: f32, color: [f32; 4]) -> Self {
         Self {
@@ -56,6 +61,8 @@ impl Shape {
                 vec2(height / 2.0, width / 2.0),
             ],
             color,
+            pivot_point: vec2(0.0, 0.0),
+            rotation: 0.0,
         }
     }
 }
