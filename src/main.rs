@@ -2,8 +2,6 @@
 
 mod engine;
 
-use std::time::Instant;
-
 use engine::world;
 use glium::glutin::{
     dpi::PhysicalPosition,
@@ -11,6 +9,7 @@ use glium::glutin::{
     event_loop::{ControlFlow, EventLoop},
 };
 use nalgebra_glm::vec2;
+use std::time::Instant;
 
 fn main() {
     let event_loop = EventLoop::new();
@@ -32,6 +31,7 @@ fn main() {
         world.render();
         let render_time = render_instant.elapsed();
 
+        #[allow(clippy::uninlined_format_args)]
         if debug_iterations % 4_000 == 0 {
             println!("nr of objects: {:?}", world.citizens_number());
             println!("loop time: {:?}", dt);
@@ -53,7 +53,7 @@ fn main() {
                 } => {
                     mouse_position = position;
                 }
-                #[allow(deprecated)]
+                #[allow(deprecated, unused_variables)]
                 event::WindowEvent::MouseInput {
                     device_id: _,
                     state,

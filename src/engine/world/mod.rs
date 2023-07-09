@@ -1,18 +1,16 @@
 mod shaders;
 
-use std::{collections::HashMap, time::Duration};
-
+use super::{
+    shape::{self, Shape},
+    Vertex,
+};
 use glium::{
     glutin::{dpi::PhysicalSize, event_loop::EventLoop, window::WindowBuilder, ContextBuilder},
     index::PrimitiveType,
     uniform, Display, DrawParameters, IndexBuffer, Program, Surface, VertexBuffer,
 };
 use nalgebra_glm::{vec2, Vec2};
-
-use super::{
-    shape::{self, Shape},
-    Vertex,
-};
+use std::{collections::HashMap, time::Duration};
 
 struct Citizen {
     position: Vec2,
@@ -118,7 +116,7 @@ impl World {
         self.citizens.insert(self.hash, new_citizen);
 
         self.rewrite_vertex_buffer();
-        self.rewwrite_index_buffer();
+        self.rewrite_index_buffer();
     }
     fn rewrite_vertex_buffer(&mut self) {
         let mut vertices: Vec<Vertex> = Vec::new();
@@ -133,7 +131,7 @@ impl World {
                 .expect("Function rewrite_vertex_buffer() failed to create buffer."),
         );
     }
-    fn rewwrite_index_buffer(&mut self) {
+    fn rewrite_index_buffer(&mut self) {
         let mut indices: Vec<u16> = Vec::new();
         let citizens = self.citizens.len();
         for citizen_nr in 0..citizens {
@@ -149,15 +147,13 @@ impl World {
             )
             .expect("Function rewrite_index_buffer() failed to create buffer."),
         );
-        let size = self.index_buffer.as_ref().unwrap().len();
     }
 
     pub fn to_gl_coords(&self, physical_coords: Vec2) -> Vec2 {
         let x = (physical_coords.x as f32 / self.width) * 2.0 - 1.0;
         let y: f32 = (physical_coords.y as f32 / self.height) * 2.0 - 1.0;
 
-        let v = vec2(x, -y);
-        v
+        vec2(x, -y)
     }
     pub fn citizens_number(&self) -> usize {
         self.citizens.len()

@@ -4,9 +4,9 @@
 // 4) world_size: [u32; 2] -- logical size of the world
 // 5) unit: f32/f64 -- do we even need this? it can be used to translate the screen coordinate to logical? nevermind.
 
-use std::f32::consts::TAU;
-
+#![allow(dead_code)]
 use nalgebra_glm::{mat2, vec2, Vec2};
+use std::f32::consts::TAU;
 
 // shape will speak logical units
 pub struct Shape {
