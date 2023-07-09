@@ -2,10 +2,12 @@
 
 mod engine;
 
-use engine::{world, Entity};
+use std::time::Instant;
+
+use engine::{shape::Shape, world};
 use glium::glutin::{
-    dpi::PhysicalPosition,
-    event,
+    dpi::{PhysicalPosition, Position},
+    event::{self, ElementState},
     event_loop::{ControlFlow, EventLoop},
 };
 use nalgebra_glm::vec2;
@@ -14,21 +16,13 @@ fn main() {
     let event_loop = EventLoop::new();
     let mut world = world::World::new(&event_loop);
 
-    let triangle = Entity::polygon(
-        vec![vec2(0.0, 0.5), vec2(-0.5, -0.5), vec2(0.5, -0.5)],
-        [0.2, 0.4, 0.6, 1.0],
-    );
-    let circle = Entity::circle([0.4, 0.4].into(), 0.2, [0.8, 0.0, 0.3, 1.0]);
-    let rectangle = Entity::rectangle([-0.4, 0.4].into(), 0.2, 0.3, [0.8, 0.4, 0.3, 1.0]);
-
-    let circle = world.add(circle);
-    let rectangle = world.add(rectangle);
-    let triangle = world.add(triangle);
-
     let mut mouse_position = PhysicalPosition::new(-1.0, -1.0);
-
+    let mut now = Instant::now();
     event_loop.run(move |event, _, control_flow| {
-        world.translate_citizen(rectangle, vec2(0.00006, 0.0));
+        let dt = now.elapsed();
+        now = Instant::now();
+
+        world.update(dt);
         world.render();
 
         if let event::Event::WindowEvent { event, .. } = event {
@@ -54,9 +48,16 @@ fn main() {
                     println!(" - state: {:?}", state);
                     println!(" - position: {:?}", mouse_position);
                     println!();
-                }
-                event::WindowEvent::Resized(physical_size) => {
-                    world.handle_resize(physical_size);
+
+                    if state == ElementState::Released {
+                        world.add(
+                            Shape::circle(0.01, [1.0, 0.0, 0.0, 1.1]),
+                            world.to_gl_coords(vec2(
+                                mouse_position.x as f32,
+                                mouse_position.y as f32,
+                            )),
+                        );
+                    }
                 }
                 _ => {}
             }

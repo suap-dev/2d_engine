@@ -11,24 +11,20 @@ use nalgebra_glm::{Vec2, mat2, vec2};
 
 // shape will speak logical units
 pub struct Shape {
-    pub position: Vec2,
     pub vertices: Vec<Vec2>,
-    // pivot_point: Vec2,
-    // rotation: f32,
     pub color: [f32; 4],
 }
-const VERTICES_OF_A_CIRCLE: u32 = 32;
+const VERTICES_OF_A_CIRCLE: u32 = 16;
 impl Shape {
-    fn polygon(position: Vec2, vertices: Vec<Vec2>, color: [f32; 4]) -> Self {
+    pub fn polygon(vertices: Vec<Vec2>, color: [f32; 4]) -> Self {
         Self {
-            position,
             vertices,
             color,
             // pivot_point: Vec2::new(0.0, 0.0),
             // rotation: 0.0,
         }
     }
-    fn circle(position: Vec2, radius: f32, color: [f32; 4]) -> Self {
+    pub fn circle(radius: f32, color: [f32; 4]) -> Self {
         let interior_angle = TAU / VERTICES_OF_A_CIRCLE as f32;
 
         let mut vertices: Vec<Vec2> = Vec::new();
@@ -49,14 +45,12 @@ impl Shape {
         }
 
         Self {
-            position,
             vertices,
             color,
         }
     }
-    fn rectangle(position: Vec2, width: f32, height: f32, color: [f32; 4]) -> Self {
+    pub fn rectangle(width: f32, height: f32, color: [f32; 4]) -> Self {
         Self {
-            position,
             vertices: vec![
                 vec2(height / 2.0, -width / 2.0),
                 vec2(-height / 2.0, -width / 2.0),
