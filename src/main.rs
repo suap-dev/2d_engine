@@ -13,6 +13,7 @@ use glium::glutin::{
 use nalgebra_glm::vec2;
 
 fn main() {
+
     let event_loop = EventLoop::new();
     let mut world = world::World::new(&event_loop);
 
