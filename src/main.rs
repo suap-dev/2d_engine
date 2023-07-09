@@ -6,7 +6,7 @@ use std::time::Instant;
 
 use engine::{shape::Shape, world};
 use glium::glutin::{
-    dpi::{PhysicalPosition, Position},
+    dpi::PhysicalPosition,
     event::{self, ElementState},
     event_loop::{ControlFlow, EventLoop},
 };

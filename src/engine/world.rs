@@ -8,8 +8,8 @@ use nalgebra_glm::{vec2, Vec2};
 
 use super::{shape::Shape, Vertex};
 
-// TODO: are separate structs Citizen and Entity really needed? Figure out and posibly make 1 struct for this functionality
-// TODO: do I really want to keep the whole Entity in the World? do I need to remember it?
+// TODO: do I really want to keep the whole Shape in the World? do I need to remember it?
+// for the purposes of this exercise (a verlet solver) I only need to store the position anyway
 struct Citizen {
     shape: Shape,
     position: Vec2,
@@ -84,10 +84,19 @@ impl World {
         }
     }
     pub fn update(&mut self, dt: Duration) {
-        for citizen in self.citizens.values_mut() {
+        // for (key, citizen) in &mut self.citizens {
+        //     citizen.velocity += self.gravity * dt.as_secs_f32();
+        //     citizen.position += citizen.velocity;
+        //     if citizen.position.x.abs() > 1.0 || citizen.position.y.abs() > 1.0 {
+        //         self.citizens.remove(key);
+        //     };
+        // }
+        self.citizens.retain(|_, citizen| {
             citizen.velocity += self.gravity * dt.as_secs_f32();
             citizen.position += citizen.velocity;
-        }
+            !(citizen.position.x.abs() > 1.0 || citizen.position.y.abs() > 1.0)
+        });
+        println!("{:?} / {:?}", self.citizens.len(), self.citizens.capacity());
     }
     pub fn render(&self) {
         let mut frame = self.display.draw();
@@ -116,7 +125,7 @@ impl World {
         frame.finish().expect("Unable to finish drawing a frame.");
     }
     pub fn add(&mut self, shape: Shape, position: Vec2) -> CitizenId {
-        self.hash += 1;        
+        self.hash += 1;
         self.circle_vertex_buffer = Some(self.vertex_buffer(&shape));
         self.citizens.insert(
             self.hash,

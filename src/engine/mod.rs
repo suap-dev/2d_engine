@@ -1,10 +1,8 @@
-pub mod world;
 pub mod shape;
-
-use std::f32::consts::TAU;
+pub mod world;
 
 use glium::implement_vertex;
-use nalgebra_glm::{mat2, vec2, Vec2};
+use nalgebra_glm::Vec2;
 
 #[derive(Clone, Copy)]
 struct Vertex {

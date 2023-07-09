@@ -1,4 +1,3 @@
-
 // 1) screen_coordinates: u32 -- simply current state of framebuffers coordinates system - u32
 // 2) gl_coords: f32  and  gl_length: f32  -- actual screen coordinates and length according to OpenGL
 // 3) logical_coordinates: f32/f64  and  logical_length: f32/f64 -- my internal system of coordinates according to world size (and unit?)
@@ -7,12 +6,14 @@
 
 use std::f32::consts::TAU;
 
-use nalgebra_glm::{Vec2, mat2, vec2};
+use nalgebra_glm::{mat2, vec2, Vec2};
 
 // shape will speak logical units
 pub struct Shape {
     pub vertices: Vec<Vec2>,
     pub color: [f32; 4],
+    // pivot_point: Vec2,
+    // rotation: 0.0,
 }
 const VERTICES_OF_A_CIRCLE: u32 = 16;
 impl Shape {
@@ -44,10 +45,7 @@ impl Shape {
             vertices.push(temp_vertex_position);
         }
 
-        Self {
-            vertices,
-            color,
-        }
+        Self { vertices, color }
     }
     pub fn rectangle(width: f32, height: f32, color: [f32; 4]) -> Self {
         Self {
