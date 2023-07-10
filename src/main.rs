@@ -5,7 +5,7 @@ mod engine;
 use engine::world;
 use glium::glutin::{
     dpi::PhysicalPosition,
-    event,
+    event::{self, ElementState},
     event_loop::{ControlFlow, EventLoop},
 };
 use nalgebra_glm::vec2;
@@ -14,6 +14,7 @@ use std::time::Instant;
 fn main() {
     let event_loop = EventLoop::new();
     let mut world = world::World::new(&event_loop);
+    world.fill(32, 32);
 
     let mut mouse_position = PhysicalPosition::new(-1.0, -1.0);
     let mut now = Instant::now();
@@ -60,9 +61,14 @@ fn main() {
                     button,
                     modifiers: _,
                 } => {
-                    world.add_obj_at(
-                        world.to_gl_coords(vec2(mouse_position.x as f32, mouse_position.y as f32)),
-                    );
+                    if state == ElementState::Released {
+                        world.add_obj_at(
+                            world.to_gl_coords(vec2(
+                                mouse_position.x as f32,
+                                mouse_position.y as f32,
+                            )),
+                        );
+                    }
                 }
                 _ => {}
             }

@@ -4,7 +4,7 @@ pub mod world;
 use glium::implement_vertex;
 use nalgebra_glm::Vec2;
 
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, Debug)]
 struct Vertex {
     position: [f32; 2],
 }

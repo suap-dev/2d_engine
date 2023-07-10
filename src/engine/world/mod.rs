@@ -10,26 +10,64 @@ use glium::{
     uniform, Display, DrawParameters, IndexBuffer, Program, Surface, VertexBuffer,
 };
 use nalgebra_glm::{vec2, Vec2};
-use std::{collections::HashMap, time::Duration};
+use std::time::Duration;
 
 struct Citizen {
     position: Vec2,
+    previous_position: Vec2,
+    acceleration: Vec2,
     velocity: Vec2,
     color: [f32; 4],
+}
+impl Citizen {
+    fn update_position(&mut self, dt: Duration) {
+        let delta_position = self.position - self.previous_position;
+        let dt = dt.as_secs_f32();
+        self.previous_position = self.position;
+
+        self.position = self.position + delta_position + self.acceleration * dt * dt;
+        self.acceleration.fill(0.0);
+
+        self.apply_constraints();
+    }
+
+    fn apply_constraints(&mut self) {
+        const CONSTRAINT_CENTER: Vec2 = Vec2::new(0.0, 0.0);
+        const CONSTRAINT_RADIUS: f32 = 0.9;
+
+        let delta_vector = self.position - CONSTRAINT_CENTER;
+
+        if delta_vector.norm() > CONSTRAINT_RADIUS {
+            self.position = CONSTRAINT_CENTER + CONSTRAINT_RADIUS * delta_vector.normalize();
+        }
+    }
+
+    fn collides_with(&self, other: &Self) -> bool {
+        self.position.metric_distance(&other.position) < 2.0 * RADIUS
+    }
+
+    fn new_at(position: Vec2) -> Self {
+        Self {
+            position,
+            previous_position: position,
+            acceleration: Vec2::zeros(),
+            velocity: Vec2::zeros(),
+            color: [1.0, 1.0, 0.0, 1.0],
+        }
+    }
 }
 
 #[derive(Clone, Copy)]
 pub struct CitizenId(usize);
 
 const WORLD_DIMENSIONS: [u32; 2] = [1000, 1000];
-const GRAVITY: Vec2 = Vec2::new(0.0, -0.001);
+const GRAVITY: Vec2 = Vec2::new(0.0, -0.7);
 const RADIUS: f32 = 0.01;
 pub struct World {
     pub display: Display,
-    citizens: HashMap<usize, Citizen>,
+    citizens: Vec<Citizen>,
     sky_color: [f32; 4],
     program: Program,
-    hash: usize,
     width: f32,
     height: f32,
     gravity: Vec2,
@@ -53,8 +91,7 @@ impl World {
             display,
             program,
             sky_color: [0.0, 0.0, 0.0, 1.0],
-            citizens: HashMap::new(),
-            hash: 0,
+            citizens: Vec::with_capacity(4096),
             width: WORLD_DIMENSIONS[0] as f32,
             height: WORLD_DIMENSIONS[1] as f32,
             gravity: GRAVITY,
@@ -63,23 +100,29 @@ impl World {
             index_buffer: None,
         }
     }
-    pub fn update(&mut self, dt: Duration) {
-        self.citizens.retain(|_, citizen| {
-            citizen.velocity += self.gravity * dt.as_secs_f32();
-            citizen.position += citizen.velocity;
+    pub fn fill(&mut self, columns: usize, rows: usize) {
+        let gap = RADIUS * 2.0;
+        let mut x = -(columns as f32 / 2.0) * gap;
+        let mut y = (rows as f32 / 2.0) * gap;
 
-            if citizen.velocity.y < -0.0015 {
-                citizen.velocity.y = -0.0015;
+        for row in 0..rows {
+            for col in 0..columns {
+                let temp_x = x + gap * (col as f32);
+                self.citizens.push(Citizen::new_at(vec2(temp_x, y)));
+                // println!("{} {}", temp_x, y);
             }
+            y -= gap;
+        }
+        self.rewrite_vertex_buffer();
+        self.rewrite_index_buffer();
+    }
+    pub fn update(&mut self, dt: Duration) {
+        for citizen in &mut self.citizens {
+            citizen.acceleration += self.gravity;
+            citizen.update_position(dt);
+        }
 
-            if citizen.position.y.abs() > 0.99 {
-                citizen.position.y = 0.98;
-            };
-
-            // which citizens to retain:
-            // !(citizen.position.x.abs() > 1.0 || citizen.position.y.abs() > 1.0)
-            true
-        });
+        self.solve_collisions();
 
         self.update_vertex_buffer();
     }
@@ -109,20 +152,21 @@ impl World {
         frame.finish().expect("Unable to finish drawing a frame.");
     }
     pub fn add_obj_at(&mut self, position: Vec2) {
-        self.hash += 1;
         let new_citizen = Citizen {
             position,
             velocity: vec2(0.0, 0.0),
             color: self.default_shape.color,
+            acceleration: vec2(0.0, 0.0),
+            previous_position: position,
         };
-        self.citizens.insert(self.hash, new_citizen);
+        self.citizens.push(new_citizen);
 
         self.rewrite_vertex_buffer();
         self.rewrite_index_buffer();
     }
     fn rewrite_vertex_buffer(&mut self) {
         let mut vertices: Vec<Vertex> = Vec::new();
-        for citizen in self.citizens.values() {
+        for citizen in &self.citizens {
             for vertex in &self.default_shape.vertices {
                 let vert = vertex + citizen.position;
                 vertices.push(vert.into());
@@ -152,7 +196,7 @@ impl World {
     }
     fn update_vertex_buffer(&mut self) {
         let mut vertices: Vec<Vertex> = Vec::new();
-        for citizen in self.citizens.values() {
+        for citizen in &self.citizens {
             for vertex in &self.default_shape.vertices {
                 let vert = vertex + citizen.position;
                 vertices.push(vert.into());
@@ -184,5 +228,18 @@ impl World {
     }
     pub fn citizens_number(&self) -> usize {
         self.citizens.len()
+    }
+    fn solve_collisions(&mut self) {
+        for i in 0..self.citizens.len() {
+            for j in i + 1..self.citizens.len() {
+                if self.citizens[i].collides_with(&self.citizens[j]) {
+                    let delta_vector = self.citizens[i].position - self.citizens[j].position;
+                    let distance = delta_vector.norm();
+                    let delta_vector = delta_vector.normalize();
+                    self.citizens[i].position += delta_vector * (RADIUS - distance / 2.0);
+                    self.citizens[j].position -= delta_vector * (RADIUS - distance / 2.0);
+                }
+            }
+        }
     }
 }

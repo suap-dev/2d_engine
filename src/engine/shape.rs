@@ -1,3 +1,4 @@
+// NOTES (for future refference not really applied):
 // 1) screen_coordinates: u32 -- simply current state of framebuffers coordinates system - u32
 // 2) gl_coords: f32  and  gl_length: f32  -- actual screen coordinates and length according to OpenGL
 // 3) logical_coordinates: f32/f64  and  logical_length: f32/f64 -- my internal system of coordinates according to world size (and unit?)
@@ -17,8 +18,12 @@ pub struct Shape {
 }
 pub const VERTICES_OF_A_CIRCLE: u16 = 8;
 pub const CIRCLE_INDICES: [u16; 18] = [
-    0, 1, 2, 0, 2, 3, 0, 3, 4, 0, 4, 5, 0, 5, 6, 0, 6,
-    7,
+    0, 1, 2,
+    0, 2, 3,
+    0, 3, 4,
+    0, 4, 5,
+    0, 5, 6,
+    0, 6, 7,
     // 0, 7, 8,
     // 0, 8, 9,
     // 0, 9, 10,
