@@ -20,58 +20,61 @@ fn main() {
     let mut now = Instant::now();
     let mut debug_iterations: usize = 0;
     event_loop.run(move |event, _, control_flow| {
-        debug_iterations += 1;
-        let dt = now.elapsed();
-        now = Instant::now();
-
-        let update_instant = Instant::now();
-        world.update(dt);
-        let update_time = update_instant.elapsed();
-
-        let render_instant = Instant::now();
-        world.render();
-        let render_time = render_instant.elapsed();
-
-        #[allow(clippy::uninlined_format_args)]
-        if debug_iterations % 4_000 == 0 {
-            println!("nr of objects: {:?}", world.citizens_number());
-            println!("loop time: {:?}", dt);
-            println!("update time: {:?}", update_time);
-            println!("render time: {:?}", render_time);
-            println!();
-        };
-
-        if let event::Event::WindowEvent { event, .. } = event {
-            match event {
-                event::WindowEvent::CloseRequested => {
-                    *control_flow = ControlFlow::Exit;
-                }
-                #[allow(deprecated)]
-                event::WindowEvent::CursorMoved {
-                    device_id: _,
-                    position,
-                    modifiers: _,
-                } => {
-                    mouse_position = position;
-                }
-                #[allow(deprecated, unused_variables)]
-                event::WindowEvent::MouseInput {
-                    device_id: _,
-                    state,
-                    button,
-                    modifiers: _,
-                } => {
-                    if state == ElementState::Released {
-                        world.add_obj_at(
-                            world.to_gl_coords(vec2(
+        control_flow.set_poll();
+        match event {
+            event::Event::WindowEvent { window_id, event } => {
+                match event {
+                    event::WindowEvent::CloseRequested => {
+                        *control_flow = ControlFlow::Exit;
+                    }
+                    #[allow(deprecated)]
+                    event::WindowEvent::CursorMoved {
+                        device_id: _,
+                        position,
+                        modifiers: _,
+                    } => {
+                        mouse_position = position;
+                    }
+                    #[allow(deprecated, unused_variables)]
+                    event::WindowEvent::MouseInput {
+                        device_id: _,
+                        state,
+                        button,
+                        modifiers: _,
+                    } => {
+                        if state == ElementState::Released {
+                            world.add_obj_at(world.to_gl_coords(vec2(
                                 mouse_position.x as f32,
                                 mouse_position.y as f32,
-                            )),
-                        );
+                            )));
+                        }
                     }
+                    _ => {}
                 }
-                _ => {}
             }
+            event::Event::MainEventsCleared => {
+                debug_iterations += 1;
+                let dt = now.elapsed();
+                now = Instant::now();
+
+                let update_instant = Instant::now();
+                world.update(dt);
+                let update_time = update_instant.elapsed();
+
+                let render_instant = Instant::now();
+                world.render();
+                let render_time = render_instant.elapsed();
+
+                #[allow(clippy::uninlined_format_args)]
+                if debug_iterations % 4_000 == 0 {
+                    println!("nr of objects: {:?}", world.citizens_number());
+                    println!("loop time: {:?}", dt);
+                    println!("update time: {:?}", update_time);
+                    println!("render time: {:?}", render_time);
+                    println!();
+                };
+            }
+            _ => {}
         }
     });
 }
