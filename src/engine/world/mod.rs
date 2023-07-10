@@ -9,7 +9,7 @@ use glium::{
     index::PrimitiveType,
     uniform, Display, DrawParameters, IndexBuffer, Program, Surface, VertexBuffer,
 };
-use nalgebra_glm::{vec2, Vec2};
+use nalgebra_glm::{rotation2d, vec2, vec2_to_vec3, vec3, Vec2};
 use std::time::Duration;
 
 struct Citizen {
@@ -19,6 +19,7 @@ struct Citizen {
     velocity: Vec2,
     color: [f32; 4],
 }
+
 impl Citizen {
     fn update_position(&mut self, dt: Duration) {
         let delta_position = self.position - self.previous_position;
@@ -28,17 +29,37 @@ impl Citizen {
         self.position = self.position + delta_position + self.acceleration * dt * dt;
         self.acceleration.fill(0.0);
 
-        self.apply_constraints();
+        self.apply_constraints(1);
     }
+    fn apply_constraints(&mut self, constraint: u16) {
+        match constraint {
+            0 => {
+                const CONSTRAINT_CENTER: Vec2 = Vec2::new(0.0, 0.0);
+                const CONSTRAINT_RADIUS: f32 = 0.9;
 
-    fn apply_constraints(&mut self) {
-        const CONSTRAINT_CENTER: Vec2 = Vec2::new(0.0, 0.0);
-        const CONSTRAINT_RADIUS: f32 = 0.9;
+                let delta_vector = self.position - CONSTRAINT_CENTER;
 
-        let delta_vector = self.position - CONSTRAINT_CENTER;
+                if delta_vector.norm() > CONSTRAINT_RADIUS {
+                    self.position =
+                        CONSTRAINT_CENTER + CONSTRAINT_RADIUS * delta_vector.normalize();
+                }
+            }
+            1 => {
+                const CONSTRAINT_BOUND: f32 = 0.9;
 
-        if delta_vector.norm() > CONSTRAINT_RADIUS {
-            self.position = CONSTRAINT_CENTER + CONSTRAINT_RADIUS * delta_vector.normalize();
+                if self.position.x > CONSTRAINT_BOUND {
+                    self.position.x = CONSTRAINT_BOUND;
+                } else if self.position.x < -CONSTRAINT_BOUND {
+                    self.position.x = -CONSTRAINT_BOUND;
+                }
+
+                if self.position.y > CONSTRAINT_BOUND {
+                    self.position.y = CONSTRAINT_BOUND;
+                } else if self.position.y < -CONSTRAINT_BOUND {
+                    self.position.y = -CONSTRAINT_BOUND;
+                }
+            }
+            _ => {}
         }
     }
 
@@ -61,7 +82,7 @@ impl Citizen {
 pub struct CitizenId(usize);
 
 const WORLD_DIMENSIONS: [u32; 2] = [1000, 1000];
-const GRAVITY: Vec2 = Vec2::new(0.0, -0.7);
+const GRAVITY: Vec2 = Vec2::new(0.0, -2.0);
 const RADIUS: f32 = 0.01;
 pub struct World {
     pub display: Display,
@@ -100,16 +121,16 @@ impl World {
             index_buffer: None,
         }
     }
-    pub fn fill(&mut self, columns: usize, rows: usize) {
-        let gap = RADIUS * 2.0;
+    pub fn fill(&mut self, columns: usize, rows: usize, origin: Vec2, rotation: f32) {
+        let gap = RADIUS * 2.1;
         let mut x = -(columns as f32 / 2.0) * gap;
         let mut y = (rows as f32 / 2.0) * gap;
 
         for row in 0..rows {
             for col in 0..columns {
                 let temp_x = x + gap * (col as f32);
-                self.citizens.push(Citizen::new_at(vec2(temp_x, y)));
-                // println!("{} {}", temp_x, y);
+                let position = rotation2d(rotation) * vec3(temp_x, y, 1.0) + vec2_to_vec3(&origin);
+                self.citizens.push(Citizen::new_at(position.xy()));
             }
             y -= gap;
         }
@@ -181,9 +202,13 @@ impl World {
         let mut indices: Vec<u16> = Vec::new();
         let citizens = self.citizens.len();
         for citizen_nr in 0..citizens {
-            for index in shape::CIRCLE_INDICES {
-                indices.push(index + citizen_nr as u16 * shape::VERTICES_OF_A_CIRCLE);
-            }
+            indices.extend_from_slice(
+                &shape::CIRCLE_INDICES
+                    .as_slice()
+                    .iter()
+                    .map(|v_idx| v_idx + citizen_nr as u16 * shape::VERTICES_OF_A_CIRCLE)
+                    .collect::<Vec<u16>>(),
+            );
         }
         self.index_buffer = Some(
             IndexBuffer::new(

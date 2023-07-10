@@ -9,12 +9,12 @@ use glium::glutin::{
     event_loop::{ControlFlow, EventLoop},
 };
 use nalgebra_glm::vec2;
-use std::time::Instant;
+use std::{f32::consts::TAU, time::Instant};
 
 fn main() {
     let event_loop = EventLoop::new();
     let mut world = world::World::new(&event_loop);
-    world.fill(32, 32);
+    world.fill(32, 32, vec2(0.3, 0.5), TAU / 45.0);
 
     let mut mouse_position = PhysicalPosition::new(-1.0, -1.0);
     let mut now = Instant::now();
