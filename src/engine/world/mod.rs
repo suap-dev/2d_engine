@@ -42,7 +42,7 @@ impl Citizen {
         }
     }
 
-    fn collides_with(&mut self, other: &Self) -> bool {
+    fn collides_with(&self, other: &Self) -> bool {
         self.position.metric_distance(&other.position) < 2.0 * RADIUS
     }
 }
@@ -51,7 +51,7 @@ impl Citizen {
 pub struct CitizenId(usize);
 
 const WORLD_DIMENSIONS: [u32; 2] = [1000, 1000];
-const GRAVITY: Vec2 = Vec2::new(0.0, -0.5);
+const GRAVITY: Vec2 = Vec2::new(0.0, -0.7);
 const RADIUS: f32 = 0.02;
 pub struct World {
     pub display: Display,
@@ -95,6 +95,8 @@ impl World {
             citizen.acceleration += self.gravity;
             citizen.update_position(dt);
         }
+
+        self.solve_collisions();
 
         self.update_vertex_buffer();
     }
@@ -200,5 +202,18 @@ impl World {
     }
     pub fn citizens_number(&self) -> usize {
         self.citizens.len()
+    }
+    fn solve_collisions(&mut self) {
+        for i in 0..self.citizens.len() {
+            for j in i + 1..self.citizens.len() {
+                if self.citizens[i].collides_with(&self.citizens[j]) {
+                    let delta_vector = self.citizens[i].position - self.citizens[j].position;
+                    let distance = delta_vector.norm();
+                    let delta_vector = delta_vector.normalize();
+                    self.citizens[i].position += delta_vector * (RADIUS - distance / 2.0);
+                    self.citizens[j].position -= delta_vector * (RADIUS - distance / 2.0);
+                }
+            }
+        }
     }
 }

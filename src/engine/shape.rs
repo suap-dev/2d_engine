@@ -1,3 +1,4 @@
+// NOTES (for future refference not really applied):
 // 1) screen_coordinates: u32 -- simply current state of framebuffers coordinates system - u32
 // 2) gl_coords: f32  and  gl_length: f32  -- actual screen coordinates and length according to OpenGL
 // 3) logical_coordinates: f32/f64  and  logical_length: f32/f64 -- my internal system of coordinates according to world size (and unit?)
