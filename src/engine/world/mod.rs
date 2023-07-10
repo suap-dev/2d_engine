@@ -45,6 +45,16 @@ impl Citizen {
     fn collides_with(&self, other: &Self) -> bool {
         self.position.metric_distance(&other.position) < 2.0 * RADIUS
     }
+
+    fn new_at(position: Vec2) -> Self {
+        Self {
+            position,
+            previous_position: position,
+            acceleration: Vec2::zeros(),
+            velocity: Vec2::zeros(),
+            color: [1.0, 1.0, 0.0, 1.0],
+        }
+    }
 }
 
 #[derive(Clone, Copy)]
@@ -52,7 +62,7 @@ pub struct CitizenId(usize);
 
 const WORLD_DIMENSIONS: [u32; 2] = [1000, 1000];
 const GRAVITY: Vec2 = Vec2::new(0.0, -0.7);
-const RADIUS: f32 = 0.02;
+const RADIUS: f32 = 0.01;
 pub struct World {
     pub display: Display,
     citizens: Vec<Citizen>,
@@ -81,7 +91,7 @@ impl World {
             display,
             program,
             sky_color: [0.0, 0.0, 0.0, 1.0],
-            citizens: Vec::with_capacity(32_000),
+            citizens: Vec::with_capacity(4096),
             width: WORLD_DIMENSIONS[0] as f32,
             height: WORLD_DIMENSIONS[1] as f32,
             gravity: GRAVITY,
@@ -89,6 +99,22 @@ impl World {
             vertex_buffer: None,
             index_buffer: None,
         }
+    }
+    pub fn fill(&mut self, columns: usize, rows: usize) {
+        let gap = RADIUS * 2.0;
+        let mut x = -(columns as f32 / 2.0) * gap;
+        let mut y = (rows as f32 / 2.0) * gap;
+
+        for row in 0..rows {
+            for col in 0..columns {
+                let temp_x = x + gap * (col as f32);
+                self.citizens.push(Citizen::new_at(vec2(temp_x, y)));
+                // println!("{} {}", temp_x, y);
+            }
+            y -= gap;
+        }
+        self.rewrite_vertex_buffer();
+        self.rewrite_index_buffer();
     }
     pub fn update(&mut self, dt: Duration) {
         for citizen in &mut self.citizens {

@@ -14,6 +14,7 @@ use std::time::Instant;
 fn main() {
     let event_loop = EventLoop::new();
     let mut world = world::World::new(&event_loop);
+    world.fill(32, 32);
 
     let mut mouse_position = PhysicalPosition::new(-1.0, -1.0);
     let mut now = Instant::now();
