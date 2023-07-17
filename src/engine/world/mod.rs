@@ -15,6 +15,7 @@ use std::time::Duration;
 struct Entity {
     position: Vec2,
     previous_position: Vec2,
+    radius: f32,
     acceleration: Vec2,
     color: [f32; 4],
 }
@@ -63,15 +64,16 @@ impl Entity {
     }
 
     fn collides_with(&self, other: &Self) -> bool {
-        self.position.metric_distance(&other.position) < 2.0 * RADIUS
+        self.position.metric_distance(&other.position) < self.radius + other.radius
     }
 
-    fn new_at(position: Vec2) -> Self {
+    fn new(position: Vec2, radius: f32, color: [f32; 4]) -> Self {
         Self {
             position,
+            radius,
             previous_position: position,
             acceleration: Vec2::zeros(),
-            color: [1.0, 1.0, 0.0, 1.0],
+            color,
         }
     }
 }
@@ -114,7 +116,7 @@ impl World {
             width: WORLD_DIMENSIONS[0] as f32,
             height: WORLD_DIMENSIONS[1] as f32,
             gravity: GRAVITY,
-            default_shape: Shape::circle(RADIUS, [1.0, 0.0, 0.0, 1.1]),
+            default_shape: Shape::circle(RADIUS, [1.0, 1.0, 1.0, 1.0]),
             vertex_buffer: None,
             index_buffer: None,
         }
@@ -128,7 +130,8 @@ impl World {
             for col in 0..columns {
                 let temp_x = x + gap * (col as f32);
                 let position = rotation2d(rotation) * vec3(temp_x, y, 1.0) + vec2_to_vec3(&origin);
-                self.entities.push(Entity::new_at(position.xy()));
+                self.entities
+                    .push(Entity::new(position.xy(), RADIUS, self.default_shape.color));
             }
             y -= gap;
         }
@@ -171,12 +174,8 @@ impl World {
         frame.finish().expect("Unable to finish drawing a frame.");
     }
     pub fn add_obj_at(&mut self, position: Vec2) {
-        let new_entity = Entity {
-            position,
-            color: self.default_shape.color,
-            acceleration: vec2(0.0, 0.0),
-            previous_position: position,
-        };
+        let new_entity = Entity::new(position, RADIUS, self.default_shape.color);
+
         self.entities.push(new_entity);
 
         self.rewrite_vertex_buffer();
