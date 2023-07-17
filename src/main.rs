@@ -67,7 +67,7 @@ fn main() {
 
                 #[allow(clippy::uninlined_format_args)]
                 if debug_iterations % 4_000 == 0 {
-                    println!("nr of objects: {:?}", world.citizens_number());
+                    println!("nr of objects: {:?}", world.entities_number());
                     println!("loop time: {:?}", dt);
                     println!("update time: {:?}", update_time);
                     println!("render time: {:?}", render_time);

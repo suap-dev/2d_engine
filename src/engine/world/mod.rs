@@ -12,7 +12,7 @@ use glium::{
 use nalgebra_glm::{rotation2d, vec2, vec2_to_vec3, vec3, Vec2};
 use std::time::Duration;
 
-struct Citizen {
+struct Entity {
     position: Vec2,
     previous_position: Vec2,
     acceleration: Vec2,
@@ -20,7 +20,7 @@ struct Citizen {
     color: [f32; 4],
 }
 
-impl Citizen {
+impl Entity {
     fn update_position(&mut self, dt: Duration) {
         let delta_position = self.position - self.previous_position;
         let dt = dt.as_secs_f32();
@@ -79,14 +79,14 @@ impl Citizen {
 }
 
 #[derive(Clone, Copy)]
-pub struct CitizenId(usize);
+pub struct EntityId(usize);
 
 const WORLD_DIMENSIONS: [u32; 2] = [1000, 1000];
 const GRAVITY: Vec2 = Vec2::new(0.0, -2.0);
 const RADIUS: f32 = 0.01;
 pub struct World {
     pub display: Display,
-    citizens: Vec<Citizen>,
+    entities: Vec<Entity>,
     sky_color: [f32; 4],
     program: Program,
     width: f32,
@@ -112,7 +112,7 @@ impl World {
             display,
             program,
             sky_color: [0.0, 0.0, 0.0, 1.0],
-            citizens: Vec::with_capacity(4096),
+            entities: Vec::with_capacity(4096),
             width: WORLD_DIMENSIONS[0] as f32,
             height: WORLD_DIMENSIONS[1] as f32,
             gravity: GRAVITY,
@@ -130,7 +130,7 @@ impl World {
             for col in 0..columns {
                 let temp_x = x + gap * (col as f32);
                 let position = rotation2d(rotation) * vec3(temp_x, y, 1.0) + vec2_to_vec3(&origin);
-                self.citizens.push(Citizen::new_at(position.xy()));
+                self.entities.push(Entity::new_at(position.xy()));
             }
             y -= gap;
         }
@@ -138,9 +138,9 @@ impl World {
         self.rewrite_index_buffer();
     }
     pub fn update(&mut self, dt: Duration) {
-        for citizen in &mut self.citizens {
-            citizen.acceleration += self.gravity;
-            citizen.update_position(dt);
+        for entity in &mut self.entities {
+            entity.acceleration += self.gravity;
+            entity.update_position(dt);
         }
 
         self.solve_collisions();
@@ -173,23 +173,23 @@ impl World {
         frame.finish().expect("Unable to finish drawing a frame.");
     }
     pub fn add_obj_at(&mut self, position: Vec2) {
-        let new_citizen = Citizen {
+        let new_entity = Entity {
             position,
             velocity: vec2(0.0, 0.0),
             color: self.default_shape.color,
             acceleration: vec2(0.0, 0.0),
             previous_position: position,
         };
-        self.citizens.push(new_citizen);
+        self.entities.push(new_entity);
 
         self.rewrite_vertex_buffer();
         self.rewrite_index_buffer();
     }
     fn rewrite_vertex_buffer(&mut self) {
         let mut vertices: Vec<Vertex> = Vec::new();
-        for citizen in &self.citizens {
+        for entity in &self.entities {
             for vertex in &self.default_shape.vertices {
-                let vert = vertex + citizen.position;
+                let vert = vertex + entity.position;
                 vertices.push(vert.into());
             }
         }
@@ -200,13 +200,13 @@ impl World {
     }
     fn rewrite_index_buffer(&mut self) {
         let mut indices: Vec<u16> = Vec::new();
-        let citizens = self.citizens.len();
-        for citizen_nr in 0..citizens {
+        let entities = self.entities.len();
+        for entity_nr in 0..entities {
             indices.extend_from_slice(
                 &shape::CIRCLE_INDICES
                     .as_slice()
                     .iter()
-                    .map(|v_idx| v_idx + citizen_nr as u16 * shape::VERTICES_OF_A_CIRCLE)
+                    .map(|v_idx| v_idx + entity_nr as u16 * shape::VERTICES_OF_A_CIRCLE)
                     .collect::<Vec<u16>>(),
             );
         }
@@ -221,9 +221,9 @@ impl World {
     }
     fn update_vertex_buffer(&mut self) {
         let mut vertices: Vec<Vertex> = Vec::new();
-        for citizen in &self.citizens {
+        for entity in &self.entities {
             for vertex in &self.default_shape.vertices {
-                let vert = vertex + citizen.position;
+                let vert = vertex + entity.position;
                 vertices.push(vert.into());
             }
         }
@@ -234,10 +234,10 @@ impl World {
     // I'm not sure if this is going to be useful in any forseeable future
     fn update_index_buffer(&mut self) {
         let mut indices: Vec<u16> = Vec::new();
-        let citizens = self.citizens.len();
-        for citizen_nr in 0..citizens {
+        let entities = self.entities.len();
+        for entity_nr in 0..entities {
             for index in shape::CIRCLE_INDICES {
-                indices.push(index + citizen_nr as u16 * shape::VERTICES_OF_A_CIRCLE);
+                indices.push(index + entity_nr as u16 * shape::VERTICES_OF_A_CIRCLE);
             }
         }
 
@@ -251,18 +251,18 @@ impl World {
 
         vec2(x, -y)
     }
-    pub fn citizens_number(&self) -> usize {
-        self.citizens.len()
+    pub fn entities_number(&self) -> usize {
+        self.entities.len()
     }
     fn solve_collisions(&mut self) {
-        for i in 0..self.citizens.len() {
-            for j in i + 1..self.citizens.len() {
-                if self.citizens[i].collides_with(&self.citizens[j]) {
-                    let delta_vector = self.citizens[i].position - self.citizens[j].position;
+        for i in 0..self.entities.len() {
+            for j in i + 1..self.entities.len() {
+                if self.entities[i].collides_with(&self.entities[j]) {
+                    let delta_vector = self.entities[i].position - self.entities[j].position;
                     let distance = delta_vector.norm();
                     let delta_vector = delta_vector.normalize();
-                    self.citizens[i].position += delta_vector * (RADIUS - distance / 2.0);
-                    self.citizens[j].position -= delta_vector * (RADIUS - distance / 2.0);
+                    self.entities[i].position += delta_vector * (RADIUS - distance / 2.0);
+                    self.entities[j].position -= delta_vector * (RADIUS - distance / 2.0);
                 }
             }
         }
