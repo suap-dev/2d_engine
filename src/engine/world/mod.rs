@@ -16,7 +16,6 @@ struct Entity {
     position: Vec2,
     previous_position: Vec2,
     acceleration: Vec2,
-    velocity: Vec2,
     color: [f32; 4],
 }
 
@@ -72,7 +71,6 @@ impl Entity {
             position,
             previous_position: position,
             acceleration: Vec2::zeros(),
-            velocity: Vec2::zeros(),
             color: [1.0, 1.0, 0.0, 1.0],
         }
     }
@@ -175,7 +173,6 @@ impl World {
     pub fn add_obj_at(&mut self, position: Vec2) {
         let new_entity = Entity {
             position,
-            velocity: vec2(0.0, 0.0),
             color: self.default_shape.color,
             acceleration: vec2(0.0, 0.0),
             previous_position: position,
@@ -188,9 +185,12 @@ impl World {
     fn rewrite_vertex_buffer(&mut self) {
         let mut vertices: Vec<Vertex> = Vec::new();
         for entity in &self.entities {
-            for vertex in &self.default_shape.vertices {
-                let vert = vertex + entity.position;
-                vertices.push(vert.into());
+            for vertex_position in &self.default_shape.vertices {
+                let translated_vertex_position = vertex_position + entity.position;
+                vertices.push(Vertex {
+                    position: translated_vertex_position.into(),
+                    color: entity.color,
+                });
             }
         }
         self.vertex_buffer = Some(
@@ -222,9 +222,12 @@ impl World {
     fn update_vertex_buffer(&mut self) {
         let mut vertices: Vec<Vertex> = Vec::new();
         for entity in &self.entities {
-            for vertex in &self.default_shape.vertices {
-                let vert = vertex + entity.position;
-                vertices.push(vert.into());
+            for vertex_position in &self.default_shape.vertices {
+                let translated_vertex_position = vertex_position + entity.position;
+                vertices.push(Vertex {
+                    position: translated_vertex_position.into(),
+                    color: entity.color,
+                });
             }
         }
         if let Some(vertex_buffer) = &self.vertex_buffer {
@@ -265,7 +268,8 @@ impl World {
     }
 
     fn solve_collision(&mut self, entity1_idx: usize, entity2_idx: usize) {
-        let delta_vector = self.entities[entity1_idx].position - self.entities[entity2_idx].position;
+        let delta_vector =
+            self.entities[entity1_idx].position - self.entities[entity2_idx].position;
         let distance = delta_vector.norm();
         let delta_vector = delta_vector.normalize();
         self.entities[entity1_idx].position += delta_vector * (RADIUS - distance / 2.0);
