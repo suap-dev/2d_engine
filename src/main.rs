@@ -2,14 +2,16 @@
 
 mod engine;
 
-use engine::world;
+use std::{f32::consts::TAU, time::Instant};
+
 use glium::glutin::{
     dpi::PhysicalPosition,
     event::{self, ElementState},
     event_loop::{ControlFlow, EventLoop},
 };
 use nalgebra_glm::vec2;
-use std::{f32::consts::TAU, time::Instant};
+
+use engine::world;
 
 fn main() {
     let event_loop = EventLoop::new();

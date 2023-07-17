@@ -1,3 +1,5 @@
+#![allow(dead_code)]
+
 // NOTES (for future refference not really applied):
 // 1) screen_coordinates: u32 -- simply current state of framebuffers coordinates system - u32
 // 2) gl_coords: f32  and  gl_length: f32  -- actual screen coordinates and length according to OpenGL
@@ -5,9 +7,9 @@
 // 4) world_size: [u32; 2] -- logical size of the world
 // 5) unit: f32/f64 -- do we even need this? it can be used to translate the screen coordinate to logical? nevermind.
 
-#![allow(dead_code)]
-use nalgebra_glm::{mat2, vec2, Vec2};
 use std::f32::consts::TAU;
+
+use nalgebra_glm::{mat2, vec2, Vec2};
 
 // shape will speak logical units
 pub struct Shape {
