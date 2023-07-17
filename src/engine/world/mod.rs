@@ -258,13 +258,17 @@ impl World {
         for i in 0..self.entities.len() {
             for j in i + 1..self.entities.len() {
                 if self.entities[i].collides_with(&self.entities[j]) {
-                    let delta_vector = self.entities[i].position - self.entities[j].position;
-                    let distance = delta_vector.norm();
-                    let delta_vector = delta_vector.normalize();
-                    self.entities[i].position += delta_vector * (RADIUS - distance / 2.0);
-                    self.entities[j].position -= delta_vector * (RADIUS - distance / 2.0);
+                    self.solve_collision(i, j);
                 }
             }
         }
+    }
+
+    fn solve_collision(&mut self, entity1_idx: usize, entity2_idx: usize) {
+        let delta_vector = self.entities[entity1_idx].position - self.entities[entity2_idx].position;
+        let distance = delta_vector.norm();
+        let delta_vector = delta_vector.normalize();
+        self.entities[entity1_idx].position += delta_vector * (RADIUS - distance / 2.0);
+        self.entities[entity2_idx].position -= delta_vector * (RADIUS - distance / 2.0);
     }
 }
