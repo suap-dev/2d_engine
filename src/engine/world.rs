@@ -1,6 +1,3 @@
-mod entity;
-mod shaders;
-
 use std::time::Duration;
 
 use glium::{
@@ -10,18 +7,17 @@ use glium::{
 };
 use nalgebra_glm::{rotation2d, vec2, vec2_to_vec3, vec3, Vec2};
 
-use self::entity::Entity;
-use super::{
+use crate::engine::{
+    entity::Entity,
+    shaders,
     shape::{self, Shape},
     Vertex,
 };
 
-#[derive(Clone, Copy)]
-pub struct EntityId(usize);
-
 const WORLD_DIMENSIONS: [u32; 2] = [1000, 1000];
 const GRAVITY: Vec2 = Vec2::new(0.0, -2.0);
 const RADIUS: f32 = 0.01;
+
 pub struct World {
     pub display: Display,
     entities: Vec<Entity>,
@@ -76,10 +72,51 @@ impl World {
         self.rewrite_vertex_buffer();
         self.rewrite_index_buffer();
     }
+    fn update_position(entity: &mut Entity, dt: Duration) {
+        let delta_position = entity.position - entity.previous_position;
+        let dt = dt.as_secs_f32();
+        entity.previous_position = entity.position;
+
+        entity.position = entity.position + delta_position + entity.acceleration * dt * dt;
+        entity.acceleration.fill(0.0);
+
+        Self::apply_constraints(entity, 1);
+    }
+    fn apply_constraints(entity: &mut Entity, constraint: u16) {
+        match constraint {
+            0 => {
+                const CONSTRAINT_CENTER: Vec2 = Vec2::new(0.0, 0.0);
+                const CONSTRAINT_RADIUS: f32 = 0.9;
+
+                let delta_vector = entity.position - CONSTRAINT_CENTER;
+
+                if delta_vector.norm() > CONSTRAINT_RADIUS {
+                    entity.position =
+                        CONSTRAINT_CENTER + CONSTRAINT_RADIUS * delta_vector.normalize();
+                }
+            }
+            1 => {
+                const CONSTRAINT_BOUND: f32 = 0.9;
+
+                if entity.position.x > CONSTRAINT_BOUND {
+                    entity.position.x = CONSTRAINT_BOUND;
+                } else if entity.position.x < -CONSTRAINT_BOUND {
+                    entity.position.x = -CONSTRAINT_BOUND;
+                }
+
+                if entity.position.y > CONSTRAINT_BOUND {
+                    entity.position.y = CONSTRAINT_BOUND;
+                } else if entity.position.y < -CONSTRAINT_BOUND {
+                    entity.position.y = -CONSTRAINT_BOUND;
+                }
+            }
+            _ => {}
+        }
+    }
     pub fn update(&mut self, dt: Duration) {
         for entity in &mut self.entities {
             entity.acceleration += self.gravity;
-            entity.update_position(dt);
+            Self::update_position(entity, dt);
         }
 
         self.solve_collisions();
