@@ -1,7 +1,9 @@
 mod entity;
 mod shaders;
 mod shape;
+pub mod grid;
 pub mod world;
+
 
 use glium::implement_vertex;
 

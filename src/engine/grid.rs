@@ -1,6 +1,6 @@
 #[derive(Debug)]
 pub struct Grid {
-    dimensions: usize,
+    pub dimensions: usize,
     radius: f32,
     pub pockets: Vec<Vec<Vec<usize>>>,
 }
@@ -28,8 +28,8 @@ impl Grid {
     pub fn push(&mut self, idx: usize, x: f32, y: f32) {
         let (i, j) = self.get_ij(x, y);
 
-        let column = self.pockets.get_mut(i).unwrap();
-        let row = column.get_mut(j).unwrap();
+        let column = self.pockets.get_mut(j).unwrap();
+        let row = column.get_mut(i).unwrap();
 
         row.push(idx);
     }
@@ -47,7 +47,9 @@ impl Grid {
     }
 
     pub fn log(&self) {
-        println!("{:?}", self);
+        for line in &self.pockets {            
+            println!("{:?}", line);
+        }
     }
 
     pub fn get(&self, x: usize, y: usize) -> &Vec<usize> {

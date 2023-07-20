@@ -14,6 +14,8 @@ use crate::engine::{
     Vertex,
 };
 
+use super::grid::Grid;
+
 const WORLD_DIMENSIONS: [u32; 2] = [1000, 1000];
 const GRAVITY: Vec2 = Vec2::new(0.0, -2.0);
 const RADIUS: f32 = 0.01;
@@ -29,6 +31,7 @@ pub struct World {
     default_shape: Shape,
     vertex_buffer: Option<VertexBuffer<Vertex>>,
     index_buffer: Option<IndexBuffer<u16>>,
+    grid: Grid,
 }
 
 impl World {
@@ -53,6 +56,7 @@ impl World {
             default_shape: Shape::circle(RADIUS, [1.0, 1.0, 1.0, 1.0]),
             vertex_buffer: None,
             index_buffer: None,
+            grid: Grid::new(RADIUS),
         }
     }
     pub fn fill(&mut self, columns: usize, rows: usize, origin: Vec2, rotation: f32) {
@@ -231,6 +235,22 @@ impl World {
     pub fn entities_number(&self) -> usize {
         self.entities.len()
     }
+    fn solve_grid_collisions(&mut self) {
+        let mut grid = &mut self.grid;
+        // grid.clear();
+
+        for (idx, entity) in self.entities.iter().enumerate() {            
+            grid.push(idx, entity.position.x, entity.position.y);
+        }
+
+        // TODO: need to check ALL POCKETS AROUND the one we're currently on.
+        for row_nr in 1..grid.dimensions-1 {
+            for col_nr in 1..grid.dimensions -1 {
+                &grid.pockets[col_nr][row_nr];
+            }
+        }
+    }
+
     fn solve_collisions(&mut self) {
         for i in 0..self.entities.len() {
             for j in i + 1..self.entities.len() {
