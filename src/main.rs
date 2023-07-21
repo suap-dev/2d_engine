@@ -16,7 +16,7 @@ use engine::world;
 fn main() {
     let event_loop = EventLoop::new();
     let mut world = world::World::new(&event_loop);
-    world.fill(32, 32, vec2(0.3, 0.5), TAU / 45.0);
+    world.fill(50, 50, vec2(0.3, 0.5), TAU / 45.0);
 
     let mut mouse_position = PhysicalPosition::new(-1.0, -1.0);
     let mut now = Instant::now();
@@ -68,7 +68,7 @@ fn main() {
                 let render_time = render_instant.elapsed();
 
                 #[allow(clippy::uninlined_format_args)]
-                if debug_iterations % 4_000 == 0 {
+                if debug_iterations % 1_000 == 0 {
                     println!("nr of objects: {:?}", world.entities_number());
                     println!("loop time: {:?}", dt);
                     println!("update time: {:?}", update_time);

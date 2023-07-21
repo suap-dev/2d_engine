@@ -1,7 +1,6 @@
 mod entity;
 mod shaders;
 mod shape;
-pub mod grid;
 pub mod world;
 
 

@@ -5,6 +5,7 @@ use glium::{
     index::PrimitiveType,
     uniform, Display, DrawParameters, IndexBuffer, Program, Surface, VertexBuffer,
 };
+use grid::Grid;
 use nalgebra_glm::{rotation2d, vec2, vec2_to_vec3, vec3, Vec2};
 
 use crate::engine::{
@@ -14,11 +15,9 @@ use crate::engine::{
     Vertex,
 };
 
-use super::grid::Grid;
-
 const WORLD_DIMENSIONS: [u32; 2] = [1000, 1000];
 const GRAVITY: Vec2 = Vec2::new(0.0, -2.0);
-const RADIUS: f32 = 0.01;
+const RADIUS: f32 = 0.005;
 
 pub struct World {
     pub display: Display,
@@ -31,7 +30,8 @@ pub struct World {
     default_shape: Shape,
     vertex_buffer: Option<VertexBuffer<Vertex>>,
     index_buffer: Option<IndexBuffer<u16>>,
-    grid: Grid,
+    // grid: Grid,
+    grid: Grid<Vec<usize>>,
 }
 
 impl World {
@@ -45,18 +45,20 @@ impl World {
 
         let program = Program::from_source(&display, shaders::VERTEX, shaders::FRAGMENT, None)
             .expect("Program creation error.");
+        let grid_dimensions = (2.0 / RADIUS) as usize + 1;
         Self {
             display,
             program,
             sky_color: [0.0, 0.0, 0.0, 1.0],
-            entities: Vec::with_capacity(4096),
+            entities: Vec::with_capacity(16_384),
             width: WORLD_DIMENSIONS[0] as f32,
             height: WORLD_DIMENSIONS[1] as f32,
             gravity: GRAVITY,
             default_shape: Shape::circle(RADIUS, [1.0, 1.0, 1.0, 1.0]),
             vertex_buffer: None,
             index_buffer: None,
-            grid: Grid::new(RADIUS),
+            // grid: Grid::new(RADIUS),
+            grid: Grid::new(grid_dimensions, grid_dimensions),
         }
     }
     pub fn fill(&mut self, columns: usize, rows: usize, origin: Vec2, rotation: f32) {
@@ -124,6 +126,8 @@ impl World {
         }
 
         self.solve_collisions();
+        // self.solve_grid_collisions();
+        // self.solve_collisions_with_grid();
 
         self.update_vertex_buffer();
     }
@@ -235,18 +239,36 @@ impl World {
     pub fn entities_number(&self) -> usize {
         self.entities.len()
     }
-    fn solve_grid_collisions(&mut self) {
-        let mut grid = &mut self.grid;
-        // grid.clear();
 
-        for (idx, entity) in self.entities.iter().enumerate() {            
-            grid.push(idx, entity.position.x, entity.position.y);
+    fn solve_collisions_with_grid(&mut self) {
+        self.grid.iter_mut().for_each(|vec| vec.clear());
+        fn get_ij(x: f32, y: f32) -> (usize, usize) {
+            (((x + 1.0) / RADIUS) as usize, ((y + 1.0) / RADIUS) as usize)
+        }
+        for (idx, entity) in self.entities.iter().enumerate() {
+            let (x, y) = get_ij(entity.position.x, entity.position.y);
+            self.grid[y][x].push(idx);
         }
 
-        // TODO: need to check ALL POCKETS AROUND the one we're currently on.
-        for row_nr in 1..grid.dimensions-1 {
-            for col_nr in 1..grid.dimensions -1 {
-                &grid.pockets[col_nr][row_nr];
+        for r in 1..self.grid.rows() - 1 {
+            for c in 1..self.grid.cols() - 1 {
+                let mut possible_collisions: Vec<usize> = Vec::new();
+                for lr in r - 1..=r + 1 {
+                    for lc in c - 1..=c + 1 {
+                        let mut collisions_pocket = self.grid[lr][lc].clone();
+                        possible_collisions.append(&mut collisions_pocket);
+                    }
+                }
+                for (pos_1, &entity_index_1) in possible_collisions.iter().enumerate() {
+                    for &entity_index_2 in possible_collisions.iter().skip(pos_1 + 1) {
+                        let entity_1 = &self.entities[entity_index_1];
+                        let entity_2 = &self.entities[entity_index_2];
+
+                        if entity_1.collides_with(entity_2) {
+                            self.solve_collision(entity_index_1, entity_index_2);
+                        }
+                    }
+                }
             }
         }
     }
@@ -260,7 +282,6 @@ impl World {
             }
         }
     }
-
     fn solve_collision(&mut self, entity1_idx: usize, entity2_idx: usize) {
         let delta_vector =
             self.entities[entity1_idx].position - self.entities[entity2_idx].position;
