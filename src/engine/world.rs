@@ -57,7 +57,6 @@ impl World {
             default_shape: Shape::circle(RADIUS, [1.0, 1.0, 1.0, 1.0]),
             vertex_buffer: None,
             index_buffer: None,
-            // grid: Grid::new(RADIUS),
             grid: Grid::new(grid_dimensions, grid_dimensions),
         }
     }
@@ -125,9 +124,8 @@ impl World {
             Self::update_position(entity, dt);
         }
 
-        self.solve_collisions();
-        // self.solve_grid_collisions();
-        // self.solve_collisions_with_grid();
+        // self.solve_collisions();
+        self.solve_collisions_with_grid();
 
         self.update_vertex_buffer();
     }
@@ -252,20 +250,22 @@ impl World {
 
         for r in 1..self.grid.rows() - 1 {
             for c in 1..self.grid.cols() - 1 {
-                let mut possible_collisions: Vec<usize> = Vec::new();
-                for lr in r - 1..=r + 1 {
-                    for lc in c - 1..=c + 1 {
-                        let mut collisions_pocket = self.grid[lr][lc].clone();
-                        possible_collisions.append(&mut collisions_pocket);
+                if !self.grid[r][c].is_empty() {
+                    let mut possible_collisions: Vec<usize> = Vec::new();
+                    for lr in r - 1..=r + 1 {
+                        for lc in c - 1..=c + 1 {
+                            let mut collisions_pocket = self.grid[lr][lc].clone();
+                            possible_collisions.append(&mut collisions_pocket);
+                        }
                     }
-                }
-                for (pos_1, &entity_index_1) in possible_collisions.iter().enumerate() {
-                    for &entity_index_2 in possible_collisions.iter().skip(pos_1 + 1) {
-                        let entity_1 = &self.entities[entity_index_1];
-                        let entity_2 = &self.entities[entity_index_2];
+                    for (pos_1, &entity_index_1) in possible_collisions.iter().enumerate() {
+                        for &entity_index_2 in possible_collisions.iter().skip(pos_1 + 1) {
+                            let entity_1 = &self.entities[entity_index_1];
+                            let entity_2 = &self.entities[entity_index_2];
 
-                        if entity_1.collides_with(entity_2) {
-                            self.solve_collision(entity_index_1, entity_index_2);
+                            if entity_1.collides_with(entity_2) {
+                                self.solve_collision(entity_index_1, entity_index_2);
+                            }
                         }
                     }
                 }
