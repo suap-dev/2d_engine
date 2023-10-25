@@ -16,11 +16,9 @@
 use winit::{
     event::{Event, KeyEvent, WindowEvent},
     event_loop::{self, EventLoop},
-    keyboard::Key,
+    keyboard::{Key, KeyCode, PhysicalKey},
     window::WindowBuilder,
 };
-
-use winit_input_helper::WinitInputHelper;
 
 fn main() {
     let event_loop = EventLoop::new().expect("Unable to create EventLoop");
@@ -29,8 +27,6 @@ fn main() {
     let window = WindowBuilder::new()
         .build(&event_loop)
         .expect("Unable to build Window");
-
-    let input = WinitInputHelper::new();
 
     let _ = event_loop.run(move |event, elwt| match event {
         Event::WindowEvent {
@@ -41,30 +37,39 @@ fn main() {
             elwt.exit();
         }
 
+        // Handle keyboard input events
+        // We use KeyCode and ElementState
+        // ElementState is an enum with "pressed"/"released" values
         Event::WindowEvent {
             event:
                 WindowEvent::KeyboardInput {
                     event:
                         KeyEvent {
-                            logical_key: Key::Character(character),
+                            physical_key: PhysicalKey::Code(key_code),
                             state,
                             ..
                         },
                     ..
                 },
             ..
-        } => match state {
-            winit::event::ElementState::Pressed => match &*character {
-                "A" | "a" => {
-                    println!("Left.");
-                }
-                _ => {}
-            },
-            winit::event::ElementState::Released => todo!(),
-        },
+        } => {
+            println!("{:?} {:?}", key_code, state);
+        }
 
-        Event::AboutToWait => {
-            todo!();
+        // Handle mouse cursor position changes
+        // (this is ok for purpose of 2d window, for fullscreen 3d app look for delta)
+        Event::WindowEvent {
+            event: WindowEvent::CursorMoved { position, .. },
+            ..
+        } => {
+            println!("Mouse position: {:?}", position);
+        }
+
+        Event::WindowEvent {
+            event: WindowEvent::MouseInput { button, state, .. },
+            ..
+        } => {
+            println!("{:?} {:?}", button, state);
         }
 
         _ => {}
