@@ -33,7 +33,7 @@ fn main() {
             event: WindowEvent::CloseRequested,
             ..
         } => {
-            eprintln!("The close button was pressed; stopping");
+            println!("The close button was pressed; stopping");
             elwt.exit();
         }
 
