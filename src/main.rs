@@ -1,6 +1,7 @@
 #![warn(clippy::all, clippy::nursery, clippy::pedantic)]
 
 mod engine;
+mod input_helper;
 
 use std::{f32::consts::TAU, time::Instant};
 
@@ -19,6 +20,7 @@ fn main() {
     world.fill(32, 32, vec2(0.3, 0.5), TAU / 45.0);
 
     let mut mouse = Mouse::default();
+
     // DEBUG
     let mut now = Instant::now();
     let mut debug_iterations: usize = 0;
