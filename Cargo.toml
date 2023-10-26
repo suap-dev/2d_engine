@@ -8,3 +8,4 @@ edition = "2021"
 [dependencies]
 glium = "0.32.*"
 nalgebra-glm = "0.18.*"
+winit_input_helper = "0.13.*"

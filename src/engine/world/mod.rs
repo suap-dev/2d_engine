@@ -46,6 +46,8 @@ impl World {
 
         let program = Program::from_source(&display, shaders::VERTEX, shaders::FRAGMENT, None)
             .expect("Program creation error.");
+
+        #[allow(clippy::cast_precision_loss)]
         Self {
             display,
             program,
@@ -59,14 +61,16 @@ impl World {
             index_buffer: None,
         }
     }
+
+    #[allow(clippy::cast_precision_loss)]
     pub fn fill(&mut self, columns: usize, rows: usize, origin: Vec2, rotation: f32) {
         let gap = RADIUS * 2.1;
-        let mut x = -(columns as f32 / 2.0) * gap;
+        let x = -(columns as f32 / 2.0) * gap;
         let mut y = (rows as f32 / 2.0) * gap;
 
-        for row in 0..rows {
+        for _row in 0..rows {
             for col in 0..columns {
-                let temp_x = x + gap * (col as f32);
+                let temp_x = gap.mul_add(col as f32, x);
                 let position = rotation2d(rotation) * vec3(temp_x, y, 1.0) + vec2_to_vec3(&origin);
                 self.entities
                     .push(Entity::new(position.xy(), RADIUS, self.default_shape.color));
@@ -138,6 +142,8 @@ impl World {
     fn rewrite_index_buffer(&mut self) {
         let mut indices: Vec<u16> = Vec::new();
         let entities = self.entities.len();
+
+        #[allow(clippy::cast_possible_truncation)]
         for entity_nr in 0..entities {
             indices.extend_from_slice(
                 &shape::CIRCLE_INDICES
@@ -172,6 +178,8 @@ impl World {
         }
     }
     // I'm not sure if this is going to be useful in any forseeable future
+    // TODO: delete?
+    #[allow(dead_code, clippy::cast_possible_truncation)]
     fn update_index_buffer(&mut self) {
         let mut indices: Vec<u16> = Vec::new();
         let entities = self.entities.len();
@@ -186,8 +194,8 @@ impl World {
         }
     }
     pub fn to_gl_coords(&self, physical_coords: Vec2) -> Vec2 {
-        let x = (physical_coords.x as f32 / self.width) * 2.0 - 1.0;
-        let y = (physical_coords.y as f32 / self.height) * 2.0 - 1.0;
+        let x = (physical_coords.x / self.width).mul_add(2.0, -1.0);
+        let y = (physical_coords.y / self.height).mul_add(2.0, -1.0);
 
         vec2(x, -y)
     }
