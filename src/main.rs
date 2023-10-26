@@ -6,10 +6,10 @@ use std::{f32::consts::TAU, time::Instant};
 
 use glium::glutin::{
     dpi::PhysicalPosition,
-    event::{self, ElementState, MouseButton},
+    event::{ElementState, Event, MouseButton, WindowEvent},
     event_loop::{ControlFlow, EventLoop},
 };
-use nalgebra_glm::vec2;
+use nalgebra_glm::{vec2, RealNumber};
 
 use engine::world;
 
@@ -19,22 +19,23 @@ fn main() {
     world.fill(32, 32, vec2(0.3, 0.5), TAU / 45.0);
 
     let mut mouse = Mouse::default();
+    // DEBUG
     let mut now = Instant::now();
     let mut debug_iterations: usize = 0;
     event_loop.run(move |event, _, control_flow| {
         control_flow.set_poll();
         match event {
-            event::Event::WindowEvent { event, .. } => match event {
+            Event::WindowEvent { event, .. } => match event {
                 // close window
-                event::WindowEvent::CloseRequested => {
+                WindowEvent::CloseRequested => {
                     *control_flow = ControlFlow::Exit;
                 }
 
                 // mouse events
-                event::WindowEvent::CursorMoved { position, .. } => {
+                WindowEvent::CursorMoved { position, .. } => {
                     mouse.position = position;
                 }
-                event::WindowEvent::MouseInput { state, button, .. } => match button {
+                WindowEvent::MouseInput { state, button, .. } => match button {
                     MouseButton::Left => match state {
                         ElementState::Pressed => {
                             mouse.left_button.pressed = true;
@@ -57,7 +58,7 @@ fn main() {
             },
 
             // game loop
-            event::Event::MainEventsCleared => {
+            Event::MainEventsCleared => {
                 debug_iterations += 1;
                 let dt = now.elapsed();
                 now = Instant::now();
@@ -92,7 +93,7 @@ fn main() {
 }
 
 #[derive(Default)]
-struct Mouse<T> {
+struct Mouse<T: RealNumber> {
     left_button: Button,
     right_button: Button,
     position: PhysicalPosition<T>,
