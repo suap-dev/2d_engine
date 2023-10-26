@@ -1,5 +1,6 @@
 #![warn(clippy::all, clippy::nursery, clippy::pedantic)]
 
+mod bench;
 mod engine;
 mod verlet;
 
@@ -12,6 +13,7 @@ use glium::glutin::event_loop::{ControlFlow, EventLoop};
 use nalgebra_glm::vec2;
 use winit_input_helper::WinitInputHelper;
 
+use bench::Bench;
 use engine::world;
 
 fn main() {
@@ -22,15 +24,15 @@ fn main() {
     let mut input = WinitInputHelper::new();
     let mut timer = Timer::new();
 
-    // DEBUG
-    let mut debug_iterations: usize = 0;
+    // BENCHING
+    let mut bench = Bench::init(2000);
+
     event_loop.run(move |event, _, control_flow| {
         control_flow.set_poll();
+        bench.loop_started();
 
         #[allow(clippy::collapsible_if)]
         if input.update(&event) {
-            // debug_iterations += 1;
-
             if input.quit() {
                 *control_flow = ControlFlow::Exit;
             }
@@ -39,21 +41,28 @@ fn main() {
                     world.add_obj_at(world.to_gl_coords(vec2(x, y)));
                 }
             }
-            
-            world.update_positions(timer.dt());
-            world.solve_collisions();
-            world.update_vertex_buffer();
-            world.render();
+            bench.events_cleared();
 
-            // #[allow(clippy::uninlined_format_args)]
-            // if debug_iterations % 2_000 == 0 {
-            //     println!("nr of objects: {:?}", world.entities_number());
-            //     println!("loop time: {:?}", dt);
-            //     println!("collisions update time: {:?}", update_time);
-            //     println!("vertex buffer update time: {:?}", update_buffer_time);
-            //     println!("render time: {:?}", render_time);
-            //     println!();
-            // };
+            world.update_positions(timer.dt());
+            bench.positions_updated();
+
+            world.solve_collisions();
+            bench.collisions_solved();
+
+            world.update_vertex_buffer();
+            bench.vb_updated();
+
+            world.render();
+            bench.rendering_finished();
+        }
+
+        bench.loop_ended();
+        if bench.report() {
+            bench.reset();
+            println!(
+                "Number of objects in simulation: {}",
+                world.entities_number()
+            );
         }
     });
 }
