@@ -1,6 +1,7 @@
 #![warn(clippy::all, clippy::nursery, clippy::pedantic)]
 
 mod engine;
+mod verlet;
 
 use std::{
     f32::consts::TAU,

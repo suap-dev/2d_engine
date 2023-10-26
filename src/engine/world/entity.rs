@@ -7,8 +7,8 @@ const VEC2_ZERO: Vec2 = Vec2::new(0.0, 0.0);
 pub struct Entity {
     pub position: Vec2,
     previous_position: Vec2,
-    radius: f32,
     pub acceleration: Vec2,
+    radius: f32,
     pub color: [f32; 4],
 }
 
@@ -16,15 +16,16 @@ impl Entity {
     pub const fn new(position: Vec2, radius: f32, color: [f32; 4]) -> Self {
         Self {
             position,
-            radius,
             previous_position: position,
             acceleration: VEC2_ZERO,
+            radius,
             color,
         }
     }
     pub fn update_position(&mut self, dt: Duration) {
-        let delta_position = self.position - self.previous_position;
         let dt = dt.as_secs_f32();
+        
+        let delta_position = self.position - self.previous_position;
         self.previous_position = self.position;
 
         self.position = self.position + delta_position + self.acceleration * dt * dt;
