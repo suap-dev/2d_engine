@@ -16,11 +16,11 @@ use engine::world;
 fn main() {
     let event_loop = EventLoop::new();
     let mut world = world::World::new(&event_loop);
-    world.fill(32, 32, vec2(0.3, 0.5), TAU / 45.0);
+    world.populate(32, 32, vec2(0.3, 0.5), TAU / 45.0);
 
     let mut input = WinitInputHelper::new();
     let mut timer = Timer::new();
-    
+
     // DEBUG
     let mut debug_iterations: usize = 0;
     event_loop.run(move |event, _, control_flow| {
