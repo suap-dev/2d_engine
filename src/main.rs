@@ -6,7 +6,7 @@ use std::{f32::consts::TAU, time::Instant};
 
 use glium::glutin::{
     dpi::PhysicalPosition,
-    event::{self, ElementState},
+    event::{self, ElementState, MouseButton},
     event_loop::{ControlFlow, EventLoop},
 };
 use nalgebra_glm::vec2;
@@ -18,46 +18,56 @@ fn main() {
     let mut world = world::World::new(&event_loop);
     world.fill(32, 32, vec2(0.3, 0.5), TAU / 45.0);
 
-    let mut mouse_position = PhysicalPosition::new(-1.0, -1.0);
+    let mut mouse = Mouse::default();
     let mut now = Instant::now();
     let mut debug_iterations: usize = 0;
     event_loop.run(move |event, _, control_flow| {
         control_flow.set_poll();
         match event {
-            event::Event::WindowEvent { window_id, event } => {
-                match event {
-                    event::WindowEvent::CloseRequested => {
-                        *control_flow = ControlFlow::Exit;
-                    }
-                    #[allow(deprecated)]
-                    event::WindowEvent::CursorMoved {
-                        device_id: _,
-                        position,
-                        modifiers: _,
-                    } => {
-                        mouse_position = position;
-                    }
-                    #[allow(deprecated, unused_variables)]
-                    event::WindowEvent::MouseInput {
-                        device_id: _,
-                        state,
-                        button,
-                        modifiers: _,
-                    } => {
-                        if state == ElementState::Released {
-                            world.add_obj_at(world.to_gl_coords(vec2(
-                                mouse_position.x as f32,
-                                mouse_position.y as f32,
-                            )));
-                        }
-                    }
-                    _ => {}
+            event::Event::WindowEvent { event, .. } => match event {
+                // close window
+                event::WindowEvent::CloseRequested => {
+                    *control_flow = ControlFlow::Exit;
                 }
-            }
+
+                // mouse events
+                event::WindowEvent::CursorMoved { position, .. } => {
+                    mouse.position = position;
+                }
+                event::WindowEvent::MouseInput { state, button, .. } => match button {
+                    MouseButton::Left => match state {
+                        ElementState::Pressed => {
+                            mouse.left_button.pressed = true;
+                        }
+                        ElementState::Released => {
+                            mouse.left_button.pressed = false;
+                        }
+                    },
+                    MouseButton::Right => match state {
+                        ElementState::Pressed => {
+                            mouse.right_button.pressed = true;
+                        }
+                        ElementState::Released => {
+                            mouse.right_button.pressed = false;
+                        }
+                    },
+                    _ => {}
+                },
+                _ => {}
+            },
+
+            // game loop
             event::Event::MainEventsCleared => {
                 debug_iterations += 1;
                 let dt = now.elapsed();
                 now = Instant::now();
+
+                #[allow(clippy::cast_possible_truncation)]
+                if mouse.left_button.pressed {
+                    world.add_obj_at(
+                        world.to_gl_coords(vec2(mouse.position.x as f32, mouse.position.y as f32)),
+                    );
+                }
 
                 let update_instant = Instant::now();
                 world.update(dt);
@@ -79,4 +89,15 @@ fn main() {
             _ => {}
         }
     });
+}
+
+#[derive(Default)]
+struct Mouse<T> {
+    left_button: Button,
+    right_button: Button,
+    position: PhysicalPosition<T>,
+}
+#[derive(Default)]
+struct Button {
+    pressed: bool,
 }
