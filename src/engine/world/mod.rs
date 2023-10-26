@@ -62,24 +62,6 @@ impl World {
         }
     }
 
-    #[allow(clippy::cast_precision_loss)]
-    pub fn fill(&mut self, columns: usize, rows: usize, origin: Vec2, rotation: f32) {
-        let gap = RADIUS * 2.1;
-        let x = -(columns as f32 / 2.0) * gap;
-        let mut y = (rows as f32 / 2.0) * gap;
-
-        for _row in 0..rows {
-            for col in 0..columns {
-                let temp_x = gap.mul_add(col as f32, x);
-                let position = rotation2d(rotation) * vec3(temp_x, y, 1.0) + vec2_to_vec3(&origin);
-                self.entities
-                    .push(Entity::new(position.xy(), RADIUS, self.default_shape.color));
-            }
-            y -= gap;
-        }
-        self.rewrite_vertex_buffer();
-        self.rewrite_index_buffer();
-    }
     pub fn update(&mut self, dt: Duration) {
         for entity in &mut self.entities {
             entity.acceleration += self.gravity;
@@ -90,6 +72,7 @@ impl World {
 
         self.update_vertex_buffer();
     }
+
     pub fn render(&self) {
         let mut frame = self.display.draw();
         frame.clear_color(
@@ -115,6 +98,18 @@ impl World {
         }
         frame.finish().expect("Unable to finish drawing a frame.");
     }
+
+    pub fn to_gl_coords(&self, physical_coords: Vec2) -> Vec2 {
+        let x = (physical_coords.x / self.width).mul_add(2.0, -1.0);
+        let y = (physical_coords.y / self.height).mul_add(2.0, -1.0);
+
+        vec2(x, -y)
+    }
+
+    pub fn entities_number(&self) -> usize {
+        self.entities.len()
+    }
+
     pub fn add_obj_at(&mut self, position: Vec2) {
         let new_entity = Entity::new(position, RADIUS, self.default_shape.color);
 
@@ -123,6 +118,26 @@ impl World {
         self.rewrite_vertex_buffer();
         self.rewrite_index_buffer();
     }
+
+    #[allow(clippy::cast_precision_loss)]
+    pub fn populate(&mut self, columns: usize, rows: usize, origin: Vec2, rotation: f32) {
+        let gap = RADIUS * 2.1;
+        let x = -(columns as f32 / 2.0) * gap;
+        let mut y = (rows as f32 / 2.0) * gap;
+
+        for _row in 0..rows {
+            for col in 0..columns {
+                let temp_x = gap.mul_add(col as f32, x);
+                let position = rotation2d(rotation) * vec3(temp_x, y, 1.0) + vec2_to_vec3(&origin);
+                self.entities
+                    .push(Entity::new(position.xy(), RADIUS, self.default_shape.color));
+            }
+            y -= gap;
+        }
+        self.rewrite_vertex_buffer();
+        self.rewrite_index_buffer();
+    }
+
     fn rewrite_vertex_buffer(&mut self) {
         let mut vertices: Vec<Vertex> = Vec::new();
         for entity in &self.entities {
@@ -139,6 +154,7 @@ impl World {
                 .expect("Function rewrite_vertex_buffer() failed to create buffer."),
         );
     }
+
     fn rewrite_index_buffer(&mut self) {
         let mut indices: Vec<u16> = Vec::new();
         let entities = self.entities.len();
@@ -162,6 +178,7 @@ impl World {
             .expect("Function rewrite_index_buffer() failed to create buffer."),
         );
     }
+
     fn update_vertex_buffer(&mut self) {
         let mut vertices: Vec<Vertex> = Vec::new();
         for entity in &self.entities {
@@ -177,6 +194,7 @@ impl World {
             vertex_buffer.write(&vertices);
         }
     }
+
     // I'm not sure if this is going to be useful in any forseeable future
     // TODO: delete?
     #[allow(dead_code, clippy::cast_possible_truncation)]
@@ -193,15 +211,7 @@ impl World {
             index_buffer.write(indices.as_slice());
         }
     }
-    pub fn to_gl_coords(&self, physical_coords: Vec2) -> Vec2 {
-        let x = (physical_coords.x / self.width).mul_add(2.0, -1.0);
-        let y = (physical_coords.y / self.height).mul_add(2.0, -1.0);
 
-        vec2(x, -y)
-    }
-    pub fn entities_number(&self) -> usize {
-        self.entities.len()
-    }
     fn solve_collisions(&mut self) {
         for i in 0..self.entities.len() {
             for j in i + 1..self.entities.len() {
