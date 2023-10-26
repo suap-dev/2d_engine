@@ -29,6 +29,8 @@ fn main() {
 
         #[allow(clippy::collapsible_if)]
         if input.update(&event) {
+            // debug_iterations += 1;
+
             if input.quit() {
                 *control_flow = ControlFlow::Exit;
             }
@@ -37,26 +39,21 @@ fn main() {
                     world.add_obj_at(world.to_gl_coords(vec2(x, y)));
                 }
             }
-
-            debug_iterations += 1;
-
-            let update_instant = Instant::now();
-            let dt = timer.dt();
-            world.update(dt);
-            let update_time = update_instant.elapsed();
-
-            let render_instant = Instant::now();
+            
+            world.update_positions(timer.dt());
+            world.solve_collisions();
+            world.update_vertex_buffer();
             world.render();
-            let render_time = render_instant.elapsed();
 
-            #[allow(clippy::uninlined_format_args)]
-            if debug_iterations % 4_000 == 0 {
-                println!("nr of objects: {:?}", world.entities_number());
-                println!("loop time: {:?}", dt);
-                println!("update time: {:?}", update_time);
-                println!("render time: {:?}", render_time);
-                println!();
-            };
+            // #[allow(clippy::uninlined_format_args)]
+            // if debug_iterations % 2_000 == 0 {
+            //     println!("nr of objects: {:?}", world.entities_number());
+            //     println!("loop time: {:?}", dt);
+            //     println!("collisions update time: {:?}", update_time);
+            //     println!("vertex buffer update time: {:?}", update_buffer_time);
+            //     println!("render time: {:?}", render_time);
+            //     println!();
+            // };
         }
     });
 }

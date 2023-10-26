@@ -62,15 +62,14 @@ impl World {
         }
     }
 
-    pub fn update(&mut self, dt: Duration) {
+    pub fn update_positions(&mut self, dt: Duration) {
         for entity in &mut self.entities {
             entity.acceleration += self.gravity;
             entity.update_position(dt);
         }
+        // self.solve_collisions();
 
-        self.solve_collisions();
-
-        self.update_vertex_buffer();
+        // self.update_vertex_buffer();
     }
 
     pub fn render(&self) {
@@ -179,7 +178,7 @@ impl World {
         );
     }
 
-    fn update_vertex_buffer(&mut self) {
+    pub fn update_vertex_buffer(&mut self) {
         let mut vertices: Vec<Vertex> = Vec::new();
         for entity in &self.entities {
             for vertex_position in &self.default_shape.vertices {
@@ -212,7 +211,7 @@ impl World {
         }
     }
 
-    fn solve_collisions(&mut self) {
+    pub fn solve_collisions(&mut self) {
         for i in 0..self.entities.len() {
             for j in i + 1..self.entities.len() {
                 if self.entities[i].collides_with(&self.entities[j]) {
