@@ -39,13 +39,11 @@ impl Entity {
         self.acceleration = acceleration;
     }
 
-    pub fn update_position(&mut self, dt: Duration) {
-        let dt = dt.as_secs_f32();
-
-        let delta_position = self.position - self.previous_position;
+    pub fn update_position(&mut self, dt: f32) {
+        let velocity_dt = self.position - self.previous_position;
         self.previous_position = self.position;
 
-        self.position = self.position + delta_position + self.acceleration * dt * dt;
+        self.position = self.position + velocity_dt + self.acceleration * dt * dt;
         self.acceleration = VEC2_ZERO;
 
         self.apply_constraints(&Constraint::Rectangular);

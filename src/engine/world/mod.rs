@@ -62,7 +62,7 @@ impl World {
         }
     }
 
-    pub fn update_positions(&mut self, dt: Duration) {
+    pub fn update_positions(&mut self, dt: f32) {
         for entity in &mut self.entities {
             entity.set_acceleration(self.gravity);
             entity.update_position(dt);
