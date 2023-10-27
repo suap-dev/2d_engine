@@ -88,30 +88,39 @@ impl World {
                 const CONSTRAINT_CENTER: Vec2 = Vec2::new(0.0, 0.0);
                 const CONSTRAINT_RADIUS: f32 = 0.9;
 
-                let delta_vector = entity.position - CONSTRAINT_CENTER;
+                let delta_vector = entity.get_position() - CONSTRAINT_CENTER;
 
                 if delta_vector.norm() > CONSTRAINT_RADIUS {
-                    entity.position =
-                        CONSTRAINT_CENTER + CONSTRAINT_RADIUS * delta_vector.normalize();
+                    entity.set_position(
+                        CONSTRAINT_CENTER + CONSTRAINT_RADIUS * delta_vector.normalize(),
+                    );
                 }
             }
             Constraint::Rectangular => {
                 const CONSTRAINT_BOUND: f32 = 0.9;
 
-                entity.position.x = entity.position.x.clamp(-CONSTRAINT_BOUND, CONSTRAINT_BOUND);
-                entity.position.y = entity.position.y.clamp(-CONSTRAINT_BOUND, CONSTRAINT_BOUND);
+                entity.set_position(Vec2::new(
+                    entity
+                        .get_position()
+                        .x
+                        .clamp(-CONSTRAINT_BOUND, CONSTRAINT_BOUND),
+                    entity
+                        .get_position()
+                        .y
+                        .clamp(-CONSTRAINT_BOUND, CONSTRAINT_BOUND),
+                ));
             }
         }
     }
 
     pub fn update_positions(&mut self, dt: f32) {
-        for entity in &mut self.entities {
-            entity.acceleration += self.gravity;
+        self.entities.iter_mut().for_each(|entity| {
+            entity.set_acceleration(self.gravity);
 
             // TODO: determine the correct order of these two
             entity.update_position(dt);
             Self::apply_constraint(entity, &Constraint::Rectangular);
-        }
+        });
 
         // self.solve_collisions();
         // self.solve_collisions_with_grid();
@@ -157,10 +166,10 @@ impl World {
         let mut vertices: Vec<Vertex> = Vec::new();
         for entity in &self.entities {
             for vertex_position in &self.default_shape.vertices {
-                let translated_vertex_position = vertex_position + entity.position;
+                let translated_vertex_position = vertex_position + entity.get_position();
                 vertices.push(Vertex {
                     position: translated_vertex_position.into(),
-                    color: entity.color,
+                    color: entity.get_color(),
                 });
             }
         }
@@ -197,10 +206,10 @@ impl World {
         let mut vertices: Vec<Vertex> = Vec::new();
         for entity in &self.entities {
             for vertex_position in &self.default_shape.vertices {
-                let translated_vertex_position = vertex_position + entity.position;
+                let translated_vertex_position = vertex_position + entity.get_position();
                 vertices.push(Vertex {
                     position: translated_vertex_position.into(),
-                    color: entity.color,
+                    color: entity.get_color(),
                 });
             }
         }
@@ -244,7 +253,7 @@ impl World {
     pub fn solve_collisions_with_grid(&mut self) {
         self.grid.iter_mut().for_each(Vec::clear);
         for (idx, entity) in self.entities.iter().enumerate() {
-            let (x, y) = Self::get_ij(entity.position.x, entity.position.y);
+            let (x, y) = Self::get_ij(entity.get_position().x, entity.get_position().y);
             self.grid[y][x].push(idx);
         }
 
@@ -285,11 +294,11 @@ impl World {
 
     fn solve_collision(&mut self, entity1_idx: usize, entity2_idx: usize) {
         let delta_vector =
-            self.entities[entity1_idx].position - self.entities[entity2_idx].position;
+            self.entities[entity1_idx].get_position() - self.entities[entity2_idx].get_position();
         let distance = delta_vector.norm();
-        let delta_vector = delta_vector.normalize();
-        self.entities[entity1_idx].position += delta_vector * (RADIUS - distance / 2.0);
-        self.entities[entity2_idx].position -= delta_vector * (RADIUS - distance / 2.0);
+        let delta = delta_vector.normalize() * (RADIUS - distance / 2.0);
+        self.entities[entity1_idx].shift(delta);
+        self.entities[entity2_idx].shift(-delta);
     }
 }
 
