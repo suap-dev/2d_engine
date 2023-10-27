@@ -1,6 +1,6 @@
 #![warn(clippy::all, clippy::nursery, clippy::pedantic)]
 
-mod engine;
+mod engine2;
 
 use std::{f32::consts::TAU, time::Instant};
 
@@ -11,7 +11,7 @@ use glium::glutin::{
 };
 use nalgebra_glm::vec2;
 
-use engine::world;
+use engine2::world;
 
 fn main() {
     let event_loop = EventLoop::new();
