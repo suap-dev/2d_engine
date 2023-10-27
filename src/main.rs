@@ -1,16 +1,15 @@
 #![warn(clippy::all, clippy::nursery, clippy::pedantic)]
 
+mod bench;
 mod engine2;
 
 use std::{f32::consts::TAU, time::Instant};
 
-use glium::glutin::{
-    dpi::PhysicalPosition,
-    event::{self, ElementState},
-    event_loop::{ControlFlow, EventLoop},
-};
+use glium::glutin::event_loop::{ControlFlow, EventLoop};
 use nalgebra_glm::vec2;
+use winit_input_helper::WinitInputHelper;
 
+use bench::Bench;
 use engine2::world;
 
 fn main() {
@@ -18,65 +17,64 @@ fn main() {
     let mut world = world::World::new(&event_loop);
     world.fill(50, 50, vec2(0.3, 0.5), TAU / 45.0);
 
-    let mut mouse_position = PhysicalPosition::new(-1.0, -1.0);
-    let mut now = Instant::now();
-    let mut debug_iterations: usize = 0;
+    let mut input = WinitInputHelper::new();
+    let mut timer = Timer::new();
+
+    // BENCHING
+    let mut bench = Bench::init(4000);
+
     event_loop.run(move |event, _, control_flow| {
         control_flow.set_poll();
-        match event {
-            event::Event::WindowEvent { window_id, event } => {
-                match event {
-                    event::WindowEvent::CloseRequested => {
-                        *control_flow = ControlFlow::Exit;
-                    }
-                    #[allow(deprecated)]
-                    event::WindowEvent::CursorMoved {
-                        device_id: _,
-                        position,
-                        modifiers: _,
-                    } => {
-                        mouse_position = position;
-                    }
-                    #[allow(deprecated, unused_variables)]
-                    event::WindowEvent::MouseInput {
-                        device_id: _,
-                        state,
-                        button,
-                        modifiers: _,
-                    } => {
-                        if state == ElementState::Released {
-                            world.add_obj_at(world.to_gl_coords(vec2(
-                                mouse_position.x as f32,
-                                mouse_position.y as f32,
-                            )));
-                        }
-                    }
-                    _ => {}
+        bench.loop_started();
+
+        #[allow(clippy::collapsible_if)]
+        if input.update(&event) {
+            if input.quit() {
+                *control_flow = ControlFlow::Exit;
+            }
+            if input.mouse_held(0) {
+                if let Some((x, y)) = input.mouse() {
+                    world.add_obj_at(world.to_gl_coords(vec2(x, y)));
                 }
             }
-            event::Event::MainEventsCleared => {
-                debug_iterations += 1;
-                let dt = now.elapsed();
-                now = Instant::now();
+            bench.events_cleared();
 
-                let update_instant = Instant::now();
-                world.update(dt);
-                let update_time = update_instant.elapsed();
+            world.update_positions(timer.dt32());
+            bench.positions_updated();
 
-                let render_instant = Instant::now();
-                world.render();
-                let render_time = render_instant.elapsed();
+            world.solve_collisions_with_grid();
+            bench.collisions_solved();
 
-                #[allow(clippy::uninlined_format_args)]
-                if debug_iterations % 1_000 == 0 {
-                    println!("nr of objects: {:?}", world.entities_number());
-                    println!("loop time: {:?}", dt);
-                    println!("update time: {:?}", update_time);
-                    println!("render time: {:?}", render_time);
-                    println!();
-                };
-            }
-            _ => {}
+            world.update_vertex_buffer();
+            bench.vb_updated();
+
+            world.render();
+            bench.rendering_finished();
+        }
+
+        bench.loop_ended();
+        if bench.report() {
+            bench.reset();
+            println!(
+                "Number of objects in simulation: {}",
+                world.entities_number()
+            );
         }
     });
+}
+
+struct Timer {
+    last_instant: Instant,
+}
+impl Timer {
+    fn new() -> Self {
+        Self {
+            last_instant: Instant::now(),
+        }
+    }
+    fn dt32(&mut self) -> f32 {
+        let dt = self.last_instant.elapsed();
+        self.last_instant = Instant::now();
+        dt.as_secs_f32()
+    }
 }

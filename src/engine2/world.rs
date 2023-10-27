@@ -77,9 +77,8 @@ impl World {
         self.rewrite_vertex_buffer();
         self.rewrite_index_buffer();
     }
-    fn update_position(entity: &mut Entity, dt: Duration) {
+    fn update_position(entity: &mut Entity, dt: f32) {
         let delta_position = entity.position - entity.previous_position;
-        let dt = dt.as_secs_f32();
         entity.previous_position = entity.position;
 
         entity.position = entity.position + delta_position + entity.acceleration * dt * dt;
@@ -118,16 +117,16 @@ impl World {
             _ => {}
         }
     }
-    pub fn update(&mut self, dt: Duration) {
+    pub fn update_positions(&mut self, dt: f32) {
         for entity in &mut self.entities {
             entity.acceleration += self.gravity;
             Self::update_position(entity, dt);
         }
 
         // self.solve_collisions();
-        self.solve_collisions_with_grid();
+        // self.solve_collisions_with_grid();
 
-        self.update_vertex_buffer();
+        // self.update_vertex_buffer();
     }
     pub fn render(&self) {
         let mut frame = self.display.draw();
@@ -199,7 +198,7 @@ impl World {
             .expect("Function rewrite_index_buffer() failed to create buffer."),
         );
     }
-    fn update_vertex_buffer(&mut self) {
+    pub fn update_vertex_buffer(&mut self) {
         let mut vertices: Vec<Vertex> = Vec::new();
         for entity in &self.entities {
             for vertex_position in &self.default_shape.vertices {
@@ -238,7 +237,7 @@ impl World {
         self.entities.len()
     }
 
-    fn solve_collisions_with_grid(&mut self) {
+    pub fn solve_collisions_with_grid(&mut self) {
         self.grid.iter_mut().for_each(|vec| vec.clear());
         fn get_ij(x: f32, y: f32) -> (usize, usize) {
             (((x + 1.0) / RADIUS) as usize, ((y + 1.0) / RADIUS) as usize)
@@ -273,7 +272,7 @@ impl World {
         }
     }
 
-    fn solve_collisions(&mut self) {
+    pub fn solve_collisions(&mut self) {
         for i in 0..self.entities.len() {
             for j in i + 1..self.entities.len() {
                 if self.entities[i].collides_with(&self.entities[j]) {
