@@ -46,6 +46,7 @@ impl Shape {
             rotation: 0.0,
         }
     }
+
     pub fn circle(radius: f32, color: [f32; 4]) -> Self {
         let interior_angle = TAU / VERTICES_OF_A_CIRCLE as f32;
 
@@ -73,6 +74,7 @@ impl Shape {
             rotation: 0.0,
         }
     }
+    
     pub fn rectangle(width: f32, height: f32, color: [f32; 4]) -> Self {
         Self {
             vertices: vec![

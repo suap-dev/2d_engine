@@ -18,6 +18,15 @@ impl Entity {
             color,
         }
     }
+
+    pub fn update_position(&mut self, dt: f32) {
+        let delta_position = self.position - self.previous_position;
+        self.previous_position = self.position;
+
+        self.position = self.position + delta_position + self.acceleration * dt * dt;
+        self.acceleration.fill(0.0);
+    }
+
     pub fn collides_with(&self, other: &Self) -> bool {
         self.position.metric_distance(&other.position) < self.radius + other.radius
     }

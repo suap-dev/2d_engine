@@ -15,7 +15,7 @@ use engine2::world;
 fn main() {
     let event_loop = EventLoop::new();
     let mut world = world::World::new(&event_loop);
-    world.fill(50, 50, vec2(0.3, 0.5), TAU / 45.0);
+    world.populate(50, 40, vec2(0.0, 0.0), TAU / 45.0);
 
     let mut input = WinitInputHelper::new();
     let mut timer = Timer::new();
@@ -42,7 +42,8 @@ fn main() {
             world.update_positions(timer.dt32());
             bench.positions_updated();
 
-            world.solve_collisions_with_grid();
+            // world.solve_collisions_with_grid();
+            world.solve_collisions();
             bench.collisions_solved();
 
             world.update_vertex_buffer();
@@ -72,6 +73,7 @@ impl Timer {
             last_instant: Instant::now(),
         }
     }
+
     fn dt32(&mut self) -> f32 {
         let dt = self.last_instant.elapsed();
         self.last_instant = Instant::now();

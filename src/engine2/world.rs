@@ -1,5 +1,3 @@
-use std::time::Duration;
-
 use glium::{
     glutin::{dpi::PhysicalSize, event_loop::EventLoop, window::WindowBuilder, ContextBuilder},
     index::PrimitiveType,
@@ -33,7 +31,6 @@ pub struct World {
     // grid: Grid,
     grid: Grid<Vec<usize>>,
 }
-
 impl World {
     pub fn new<T>(event_loop: &EventLoop<T>) -> Self {
         let window_builder = WindowBuilder::new()
@@ -45,7 +42,11 @@ impl World {
 
         let program = Program::from_source(&display, shaders::VERTEX, shaders::FRAGMENT, None)
             .expect("Program creation error.");
+
+        #[allow(clippy::cast_possible_truncation, clippy::cast_sign_loss)]
         let grid_dimensions = (2.0 / RADIUS) as usize + 1;
+
+        #[allow(clippy::cast_precision_loss)]
         Self {
             display,
             program,
@@ -60,14 +61,16 @@ impl World {
             grid: Grid::new(grid_dimensions, grid_dimensions),
         }
     }
-    pub fn fill(&mut self, columns: usize, rows: usize, origin: Vec2, rotation: f32) {
+
+    #[allow(clippy::cast_precision_loss)]
+    pub fn populate(&mut self, columns: usize, rows: usize, origin: Vec2, rotation: f32) {
         let gap = RADIUS * 2.1;
-        let mut x = -(columns as f32 / 2.0) * gap;
+        let x = -(columns as f32 / 2.0) * gap;
         let mut y = (rows as f32 / 2.0) * gap;
 
-        for row in 0..rows {
+        for _row in 0..rows {
             for col in 0..columns {
-                let temp_x = x + gap * (col as f32);
+                let temp_x = gap.mul_add(col as f32, x);
                 let position = rotation2d(rotation) * vec3(temp_x, y, 1.0) + vec2_to_vec3(&origin);
                 self.entities
                     .push(Entity::new(position.xy(), RADIUS, self.default_shape.color));
@@ -77,18 +80,11 @@ impl World {
         self.rewrite_vertex_buffer();
         self.rewrite_index_buffer();
     }
-    fn update_position(entity: &mut Entity, dt: f32) {
-        let delta_position = entity.position - entity.previous_position;
-        entity.previous_position = entity.position;
 
-        entity.position = entity.position + delta_position + entity.acceleration * dt * dt;
-        entity.acceleration.fill(0.0);
-
-        Self::apply_constraints(entity, 1);
-    }
-    fn apply_constraints(entity: &mut Entity, constraint: u16) {
+    // TODO: is this the best way? it feels like a brute force.
+    fn apply_constraint(entity: &mut Entity, constraint: &Constraint) {
         match constraint {
-            0 => {
+            Constraint::Circular => {
                 const CONSTRAINT_CENTER: Vec2 = Vec2::new(0.0, 0.0);
                 const CONSTRAINT_RADIUS: f32 = 0.9;
 
@@ -99,35 +95,29 @@ impl World {
                         CONSTRAINT_CENTER + CONSTRAINT_RADIUS * delta_vector.normalize();
                 }
             }
-            1 => {
+            Constraint::Rectangular => {
                 const CONSTRAINT_BOUND: f32 = 0.9;
 
-                if entity.position.x > CONSTRAINT_BOUND {
-                    entity.position.x = CONSTRAINT_BOUND;
-                } else if entity.position.x < -CONSTRAINT_BOUND {
-                    entity.position.x = -CONSTRAINT_BOUND;
-                }
-
-                if entity.position.y > CONSTRAINT_BOUND {
-                    entity.position.y = CONSTRAINT_BOUND;
-                } else if entity.position.y < -CONSTRAINT_BOUND {
-                    entity.position.y = -CONSTRAINT_BOUND;
-                }
+                entity.position.x = entity.position.x.clamp(-CONSTRAINT_BOUND, CONSTRAINT_BOUND);
+                entity.position.y = entity.position.y.clamp(-CONSTRAINT_BOUND, CONSTRAINT_BOUND);
             }
-            _ => {}
         }
     }
+
     pub fn update_positions(&mut self, dt: f32) {
         for entity in &mut self.entities {
             entity.acceleration += self.gravity;
-            Self::update_position(entity, dt);
+
+            // TODO: determine the correct order of these two
+            entity.update_position(dt);
+            Self::apply_constraint(entity, &Constraint::Rectangular);
         }
 
         // self.solve_collisions();
         // self.solve_collisions_with_grid();
-
         // self.update_vertex_buffer();
     }
+
     pub fn render(&self) {
         let mut frame = self.display.draw();
         frame.clear_color(
@@ -153,6 +143,7 @@ impl World {
         }
         frame.finish().expect("Unable to finish drawing a frame.");
     }
+
     pub fn add_obj_at(&mut self, position: Vec2) {
         let new_entity = Entity::new(position, RADIUS, self.default_shape.color);
 
@@ -161,6 +152,7 @@ impl World {
         self.rewrite_vertex_buffer();
         self.rewrite_index_buffer();
     }
+
     fn rewrite_vertex_buffer(&mut self) {
         let mut vertices: Vec<Vertex> = Vec::new();
         for entity in &self.entities {
@@ -177,10 +169,12 @@ impl World {
                 .expect("Function rewrite_vertex_buffer() failed to create buffer."),
         );
     }
+
     fn rewrite_index_buffer(&mut self) {
         let mut indices: Vec<u16> = Vec::new();
         let entities = self.entities.len();
         for entity_nr in 0..entities {
+            #[allow(clippy::cast_possible_truncation)]
             indices.extend_from_slice(
                 &shape::CIRCLE_INDICES
                     .as_slice()
@@ -198,6 +192,7 @@ impl World {
             .expect("Function rewrite_index_buffer() failed to create buffer."),
         );
     }
+
     pub fn update_vertex_buffer(&mut self) {
         let mut vertices: Vec<Vertex> = Vec::new();
         for entity in &self.entities {
@@ -213,12 +208,14 @@ impl World {
             vertex_buffer.write(&vertices);
         }
     }
+
     // I'm not sure if this is going to be useful in any forseeable future
     fn update_index_buffer(&mut self) {
         let mut indices: Vec<u16> = Vec::new();
         let entities = self.entities.len();
         for entity_nr in 0..entities {
             for index in shape::CIRCLE_INDICES {
+                #[allow(clippy::cast_possible_truncation)]
                 indices.push(index + entity_nr as u16 * shape::VERTICES_OF_A_CIRCLE);
             }
         }
@@ -227,23 +224,27 @@ impl World {
             index_buffer.write(indices.as_slice());
         }
     }
+
     pub fn to_gl_coords(&self, physical_coords: Vec2) -> Vec2 {
-        let x = (physical_coords.x as f32 / self.width) * 2.0 - 1.0;
-        let y = (physical_coords.y as f32 / self.height) * 2.0 - 1.0;
+        let x = (physical_coords.x / self.width).mul_add(2.0, -1.0);
+        let y = (physical_coords.y / self.height).mul_add(2.0, -1.0);
 
         vec2(x, -y)
     }
+
     pub fn entities_number(&self) -> usize {
         self.entities.len()
     }
 
+    #[allow(clippy::cast_possible_truncation, clippy::cast_sign_loss)]
+    fn get_ij(x: f32, y: f32) -> (usize, usize) {
+        (((x + 1.0) / RADIUS) as usize, ((y + 1.0) / RADIUS) as usize)
+    }
+
     pub fn solve_collisions_with_grid(&mut self) {
-        self.grid.iter_mut().for_each(|vec| vec.clear());
-        fn get_ij(x: f32, y: f32) -> (usize, usize) {
-            (((x + 1.0) / RADIUS) as usize, ((y + 1.0) / RADIUS) as usize)
-        }
+        self.grid.iter_mut().for_each(Vec::clear);
         for (idx, entity) in self.entities.iter().enumerate() {
-            let (x, y) = get_ij(entity.position.x, entity.position.y);
+            let (x, y) = Self::get_ij(entity.position.x, entity.position.y);
             self.grid[y][x].push(idx);
         }
 
@@ -281,6 +282,7 @@ impl World {
             }
         }
     }
+
     fn solve_collision(&mut self, entity1_idx: usize, entity2_idx: usize) {
         let delta_vector =
             self.entities[entity1_idx].position - self.entities[entity2_idx].position;
@@ -289,4 +291,10 @@ impl World {
         self.entities[entity1_idx].position += delta_vector * (RADIUS - distance / 2.0);
         self.entities[entity2_idx].position -= delta_vector * (RADIUS - distance / 2.0);
     }
+}
+
+#[allow(dead_code)]
+enum Constraint {
+    Circular,
+    Rectangular,
 }
