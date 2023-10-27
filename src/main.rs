@@ -25,7 +25,7 @@ fn main() {
     let mut timer = Timer::new();
 
     // BENCHING
-    let mut bench = Bench::init(2000);
+    let mut bench = Bench::init(4000);
 
     event_loop.run(move |event, _, control_flow| {
         control_flow.set_poll();

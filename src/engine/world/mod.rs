@@ -64,7 +64,7 @@ impl World {
 
     pub fn update_positions(&mut self, dt: Duration) {
         for entity in &mut self.entities {
-            entity.acceleration += self.gravity;
+            entity.set_acceleration(self.gravity);
             entity.update_position(dt);
         }
         // self.solve_collisions();
@@ -141,10 +141,10 @@ impl World {
         let mut vertices: Vec<Vertex> = Vec::new();
         for entity in &self.entities {
             for vertex_position in &self.default_shape.vertices {
-                let translated_vertex_position = vertex_position + entity.position;
+                let translated_vertex_position = vertex_position + entity.get_position();
                 vertices.push(Vertex {
                     position: translated_vertex_position.into(),
-                    color: entity.color,
+                    color: entity.get_color(),
                 });
             }
         }
@@ -182,10 +182,10 @@ impl World {
         let mut vertices: Vec<Vertex> = Vec::new();
         for entity in &self.entities {
             for vertex_position in &self.default_shape.vertices {
-                let translated_vertex_position = vertex_position + entity.position;
+                let translated_vertex_position = vertex_position + entity.get_position();
                 vertices.push(Vertex {
                     position: translated_vertex_position.into(),
-                    color: entity.color,
+                    color: entity.get_color(),
                 });
             }
         }
@@ -223,10 +223,10 @@ impl World {
 
     fn solve_collision(&mut self, entity1_idx: usize, entity2_idx: usize) {
         let delta_vector =
-            self.entities[entity1_idx].position - self.entities[entity2_idx].position;
+            self.entities[entity1_idx].get_position() - self.entities[entity2_idx].get_position();
         let distance = delta_vector.norm();
-        let delta_vector = delta_vector.normalize();
-        self.entities[entity1_idx].position += delta_vector * (RADIUS - distance / 2.0);
-        self.entities[entity2_idx].position -= delta_vector * (RADIUS - distance / 2.0);
+        let delta_vector = delta_vector.normalize() * (RADIUS - distance / 2.0);
+        self.entities[entity1_idx].shift(delta_vector);
+        self.entities[entity2_idx].shift(-delta_vector);
     }
 }
