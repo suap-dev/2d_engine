@@ -49,6 +49,14 @@ impl Entity {
         self.acceleration = acceleration;
     }
 
+    pub fn increase_acceleration(&mut self, delta: Vec2) {
+        self.acceleration += delta;
+    }
+
+    pub const fn get_radius(&self) -> f32 {
+        self.radius
+    }
+
     pub const fn get_color(&self) -> [f32; 4] {
         self.color
     }
