@@ -39,11 +39,14 @@ fn main() {
             }
             bench.events_cleared();
 
-            world.update_positions(timer.dt32());
-            bench.positions_updated();
+            // world.update_positions(timer.dt32());
+            // bench.positions_updated();
 
-            // world.solve_collisions_with_grid();
-            world.solve_collisions();
+            // // world.solve_collisions_with_grid();
+            // world.solve_collisions();
+            // bench.collisions_solved();
+
+            world.update(timer.dt32(), 4);
             bench.collisions_solved();
 
             world.update_vertex_buffer();

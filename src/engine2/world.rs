@@ -81,8 +81,44 @@ impl World {
         self.rewrite_index_buffer();
     }
 
+    fn apply_constraint(&mut self, constraint: &Constraint) {
+        match constraint {
+            Constraint::Circular => {
+                const CONSTRAINT_CENTER: Vec2 = Vec2::new(0.0, 0.0);
+                const CONSTRAINT_RADIUS: f32 = 0.9;
+
+                self.entities.iter_mut().for_each(|entity| {
+                    let relative_position = entity.get_position() - CONSTRAINT_CENTER;
+                    let distance = relative_position.norm();
+                    let out_of_bounds = distance + entity.get_radius() - CONSTRAINT_RADIUS;
+
+                    if out_of_bounds > 0.0 {
+                        let fix = -relative_position.normalize() * out_of_bounds;
+                        entity.shift(fix);
+                    }
+                });
+            }
+            Constraint::Rectangular => {
+                const CONSTRAINT_BOUND: f32 = 0.9;
+
+                self.entities.iter_mut().for_each(|entity| {
+                    entity.set_position(Vec2::new(
+                        entity
+                            .get_position()
+                            .x
+                            .clamp(-CONSTRAINT_BOUND, CONSTRAINT_BOUND),
+                        entity
+                            .get_position()
+                            .y
+                            .clamp(-CONSTRAINT_BOUND, CONSTRAINT_BOUND),
+                    ));
+                });
+            }
+        }
+    }
+
     // TODO: is this the best way? it feels like a brute force.
-    fn apply_constraint(entity: &mut Entity, constraint: &Constraint) {
+    fn apply_constraint2(entity: &mut Entity, constraint: &Constraint) {
         match constraint {
             Constraint::Circular => {
                 const CONSTRAINT_CENTER: Vec2 = Vec2::new(0.0, 0.0);
@@ -113,13 +149,28 @@ impl World {
         }
     }
 
+    pub fn update(&mut self, dt: f32, substeps: usize) {
+        let dt = dt / substeps as f32;
+        for _ in 0..substeps {
+            self.apply_gravity();
+            self.apply_constraint(&Constraint::Circular);
+            // self.solve_collisions();
+            self.solve_collisions_with_grid();
+            self.update_positions(dt);
+            // self.update_posiion
+        }
+    }
+
+    fn apply_gravity(&mut self) {
+        self.entities
+            .iter_mut()
+            .for_each(|entity| entity.set_acceleration(self.gravity));
+    }
+
     pub fn update_positions(&mut self, dt: f32) {
         self.entities.iter_mut().for_each(|entity| {
-            entity.set_acceleration(self.gravity);
-
             // TODO: determine the correct order of these two
             entity.update_position(dt);
-            Self::apply_constraint(entity, &Constraint::Rectangular);
         });
 
         // self.solve_collisions();
