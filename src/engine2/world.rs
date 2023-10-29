@@ -8,7 +8,7 @@ use crate::engine2::{
 };
 
 const WORLD_DIMENSIONS: [u32; 2] = [1000, 1000];
-const GRAVITY: Vec2 = Vec2::new(0.0, -2.0);
+const GRAVITY: Vec2 = Vec2::new(0.0, -0.1);
 
 pub struct World {
     objects: Vec<VerletObject>,
@@ -57,66 +57,49 @@ impl World {
         self.renderer.rewrite_index_buffer(&self.objects);
     }
 
-    fn apply_constraint(&mut self, constraint: &Constraint) {
-        match constraint {
-            Constraint::Circular => {
-                const CONSTRAINT_CENTER: Vec2 = Vec2::new(0.0, 0.0);
-                const CONSTRAINT_RADIUS: f32 = 0.9;
-
-                self.objects.iter_mut().for_each(|obj| {
-                    let relative_position = obj.get_position() - CONSTRAINT_CENTER;
-                    let distance = relative_position.norm();
-                    let out_of_bounds = distance + obj.get_radius() - CONSTRAINT_RADIUS;
-
-                    if out_of_bounds > 0.0 {
-                        let fix = -relative_position.normalize() * out_of_bounds;
-                        obj.shift(fix);
-                    }
-                });
+    fn constrain(&mut self, constraint: Constraint) {
+        self.objects.iter_mut().for_each(|obj| {
+            if let Some(offset) = Self::trespass_vector(obj, constraint) {
+                // obj.adjust_position_data(-offset);
+                obj.shift(-offset);
             }
-            Constraint::Rectangular => {
-                const CONSTRAINT_BOUND: f32 = 0.9;
-
-                self.objects.iter_mut().for_each(|obj| {
-                    obj.set_position(Vec2::new(
-                        obj.get_position()
-                            .x
-                            .clamp(-CONSTRAINT_BOUND, CONSTRAINT_BOUND),
-                        obj.get_position()
-                            .y
-                            .clamp(-CONSTRAINT_BOUND, CONSTRAINT_BOUND),
-                    ));
-                });
-            }
-        }
+        });
     }
 
     // TODO: is this the best way? it feels like a brute force.
-    fn apply_constraint2(obj: &mut VerletObject, constraint: &Constraint) {
+    fn trespass_vector(obj: &VerletObject, constraint: Constraint) -> Option<Vec2> {
         match constraint {
             Constraint::Circular => {
                 const CONSTRAINT_CENTER: Vec2 = Vec2::new(0.0, 0.0);
                 const CONSTRAINT_RADIUS: f32 = 0.9;
 
-                let delta_vector = obj.get_position() - CONSTRAINT_CENTER;
-
-                if delta_vector.norm() > CONSTRAINT_RADIUS {
-                    obj.set_position(
-                        CONSTRAINT_CENTER + CONSTRAINT_RADIUS * delta_vector.normalize(),
-                    );
+                let distance_from_center = obj.get_position().metric_distance(&CONSTRAINT_CENTER);
+                if distance_from_center > CONSTRAINT_RADIUS {
+                    let distance_vec = obj.get_position() - CONSTRAINT_CENTER;
+                    let radius_vec = distance_vec.normalize() * CONSTRAINT_RADIUS;
+                    let trespass_vec = distance_vec - radius_vec;
+                    Some(trespass_vec)
+                } else {
+                    None
                 }
             }
             Constraint::Rectangular => {
                 const CONSTRAINT_BOUND: f32 = 0.9;
 
-                obj.set_position(Vec2::new(
+                let clamped = vec2(
                     obj.get_position()
                         .x
                         .clamp(-CONSTRAINT_BOUND, CONSTRAINT_BOUND),
                     obj.get_position()
                         .y
                         .clamp(-CONSTRAINT_BOUND, CONSTRAINT_BOUND),
-                ));
+                );
+
+                if clamped == obj.get_position() {
+                    None
+                } else {
+                    Some(obj.get_position() - clamped)
+                }
             }
         }
     }
@@ -127,7 +110,7 @@ impl World {
             self.apply_gravity();
 
             // TODO: determine the correct order of these two
-            self.apply_constraint(&Constraint::Circular);
+            self.constrain(Constraint::Rectangular);
             self.solve_collisions();
 
             // self.solve_collisions_with_grid();
@@ -237,6 +220,7 @@ impl World {
     }
 }
 
+#[derive(Clone, Copy)]
 #[allow(dead_code)]
 enum Constraint {
     Circular,

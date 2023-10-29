@@ -25,12 +25,17 @@ impl VerletObject {
         self.position
     }
 
-    pub fn set_position(&mut self, position: Vec2) {
-        self.position = position;
-    }
-
     pub fn shift(&mut self, vector: Vec2) {
         self.position += vector;
+    }
+
+    /// Forcefuly adjusts both ``position`` and ``previous_position`` to avoid changing velocity.
+    /// This is works around the solver. Consider using ``fn shift(&mut self, vector: Vec)``
+    /// if you're not sure you need this one.
+    pub fn adjust_position_data(&mut self, vector: Vec2) {
+        self.position += vector;
+        // self.previous_position = self.position;
+        self.previous_position += vector;
     }
 
     pub fn update_position(&mut self, dt: f32) {
@@ -49,7 +54,7 @@ impl VerletObject {
         self.acceleration = acceleration;
     }
 
-    pub fn increase_acceleration(&mut self, delta: Vec2) {
+    pub fn accelerate(&mut self, delta: Vec2) {
         self.acceleration += delta;
     }
 
