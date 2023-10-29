@@ -2,7 +2,7 @@ use nalgebra_glm::Vec2;
 
 const VEC2_ZERO: Vec2 = Vec2::new(0.0, 0.0);
 
-pub struct Entity {
+pub struct VerletObject {
     position: Vec2,
     previous_position: Vec2,
     radius: f32,
@@ -10,7 +10,7 @@ pub struct Entity {
     color: [f32; 4],
 }
 
-impl Entity {
+impl VerletObject {
     pub const fn new(position: Vec2, radius: f32, color: [f32; 4]) -> Self {
         Self {
             position,

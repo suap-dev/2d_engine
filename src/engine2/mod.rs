@@ -1,4 +1,4 @@
-mod entity;
+mod verlet_object;
 mod shaders;
 mod shape;
 pub mod world;

@@ -7,7 +7,7 @@ use grid::Grid;
 use nalgebra_glm::{rotation2d, vec2, vec2_to_vec3, vec3, Vec2};
 
 use crate::engine2::{
-    entity::Entity,
+    verlet_object::VerletObject,
     shaders,
     shape::{self, Shape},
     Vertex,
@@ -19,8 +19,8 @@ const RADIUS: f32 = 0.005;
 
 pub struct World {
     pub display: Display,
-    entities: Vec<Entity>,
-    sky_color: [f32; 4],
+    objects: Vec<VerletObject>,
+    background_color: [f32; 4],
     program: Program,
     width: f32,
     height: f32,
@@ -50,8 +50,8 @@ impl World {
         Self {
             display,
             program,
-            sky_color: [0.0, 0.0, 0.0, 1.0],
-            entities: Vec::with_capacity(16_384),
+            background_color: [0.0, 0.0, 0.0, 1.0],
+            objects: Vec::with_capacity(16_384),
             width: WORLD_DIMENSIONS[0] as f32,
             height: WORLD_DIMENSIONS[1] as f32,
             gravity: GRAVITY,
@@ -72,8 +72,11 @@ impl World {
             for col in 0..columns {
                 let temp_x = gap.mul_add(col as f32, x);
                 let position = rotation2d(rotation) * vec3(temp_x, y, 1.0) + vec2_to_vec3(&origin);
-                self.entities
-                    .push(Entity::new(position.xy(), RADIUS, self.default_shape.color));
+                self.objects.push(VerletObject::new(
+                    position.xy(),
+                    RADIUS,
+                    self.default_shape.color,
+                ));
             }
             y -= gap;
         }
@@ -87,27 +90,27 @@ impl World {
                 const CONSTRAINT_CENTER: Vec2 = Vec2::new(0.0, 0.0);
                 const CONSTRAINT_RADIUS: f32 = 0.9;
 
-                self.entities.iter_mut().for_each(|entity| {
-                    let relative_position = entity.get_position() - CONSTRAINT_CENTER;
+                self.objects.iter_mut().for_each(|obj| {
+                    let relative_position = obj.get_position() - CONSTRAINT_CENTER;
                     let distance = relative_position.norm();
-                    let out_of_bounds = distance + entity.get_radius() - CONSTRAINT_RADIUS;
+                    let out_of_bounds = distance + obj.get_radius() - CONSTRAINT_RADIUS;
 
                     if out_of_bounds > 0.0 {
                         let fix = -relative_position.normalize() * out_of_bounds;
-                        entity.shift(fix);
+                        obj.shift(fix);
                     }
                 });
             }
             Constraint::Rectangular => {
                 const CONSTRAINT_BOUND: f32 = 0.9;
 
-                self.entities.iter_mut().for_each(|entity| {
-                    entity.set_position(Vec2::new(
-                        entity
+                self.objects.iter_mut().for_each(|obj| {
+                    obj.set_position(Vec2::new(
+                        obj
                             .get_position()
                             .x
                             .clamp(-CONSTRAINT_BOUND, CONSTRAINT_BOUND),
-                        entity
+                        obj
                             .get_position()
                             .y
                             .clamp(-CONSTRAINT_BOUND, CONSTRAINT_BOUND),
@@ -118,16 +121,16 @@ impl World {
     }
 
     // TODO: is this the best way? it feels like a brute force.
-    fn apply_constraint2(entity: &mut Entity, constraint: &Constraint) {
+    fn apply_constraint2(obj: &mut VerletObject, constraint: &Constraint) {
         match constraint {
             Constraint::Circular => {
                 const CONSTRAINT_CENTER: Vec2 = Vec2::new(0.0, 0.0);
                 const CONSTRAINT_RADIUS: f32 = 0.9;
 
-                let delta_vector = entity.get_position() - CONSTRAINT_CENTER;
+                let delta_vector = obj.get_position() - CONSTRAINT_CENTER;
 
                 if delta_vector.norm() > CONSTRAINT_RADIUS {
-                    entity.set_position(
+                    obj.set_position(
                         CONSTRAINT_CENTER + CONSTRAINT_RADIUS * delta_vector.normalize(),
                     );
                 }
@@ -135,12 +138,12 @@ impl World {
             Constraint::Rectangular => {
                 const CONSTRAINT_BOUND: f32 = 0.9;
 
-                entity.set_position(Vec2::new(
-                    entity
+                obj.set_position(Vec2::new(
+                    obj
                         .get_position()
                         .x
                         .clamp(-CONSTRAINT_BOUND, CONSTRAINT_BOUND),
-                    entity
+                    obj
                         .get_position()
                         .y
                         .clamp(-CONSTRAINT_BOUND, CONSTRAINT_BOUND),
@@ -162,15 +165,15 @@ impl World {
     }
 
     fn apply_gravity(&mut self) {
-        self.entities
+        self.objects
             .iter_mut()
-            .for_each(|entity| entity.set_acceleration(self.gravity));
+            .for_each(|obj| obj.set_acceleration(self.gravity));
     }
 
     pub fn update_positions(&mut self, dt: f32) {
-        self.entities.iter_mut().for_each(|entity| {
+        self.objects.iter_mut().for_each(|obj| {
             // TODO: determine the correct order of these two
-            entity.update_position(dt);
+            obj.update_position(dt);
         });
 
         // self.solve_collisions();
@@ -181,10 +184,10 @@ impl World {
     pub fn render(&self) {
         let mut frame = self.display.draw();
         frame.clear_color(
-            self.sky_color[0],
-            self.sky_color[1],
-            self.sky_color[2],
-            self.sky_color[3],
+            self.background_color[0],
+            self.background_color[1],
+            self.background_color[2],
+            self.background_color[3],
         );
         if let Some(vb) = &self.vertex_buffer {
             if let Some(ib) = &self.index_buffer {
@@ -198,16 +201,16 @@ impl World {
                         },
                         &DrawParameters::default(),
                     )
-                    .expect("Unable to draw this entity.");
+                    .expect("Unable to draw this obj.");
             };
         }
         frame.finish().expect("Unable to finish drawing a frame.");
     }
 
     pub fn add_obj_at(&mut self, position: Vec2) {
-        let new_entity = Entity::new(position, RADIUS, self.default_shape.color);
+        let new_obj = VerletObject::new(position, RADIUS, self.default_shape.color);
 
-        self.entities.push(new_entity);
+        self.objects.push(new_obj);
 
         self.rewrite_vertex_buffer();
         self.rewrite_index_buffer();
@@ -215,12 +218,12 @@ impl World {
 
     fn rewrite_vertex_buffer(&mut self) {
         let mut vertices: Vec<Vertex> = Vec::new();
-        for entity in &self.entities {
+        for obj in &self.objects {
             for vertex_position in &self.default_shape.vertices {
-                let translated_vertex_position = vertex_position + entity.get_position();
+                let translated_vertex_position = vertex_position + obj.get_position();
                 vertices.push(Vertex {
                     position: translated_vertex_position.into(),
-                    color: entity.get_color(),
+                    color: obj.get_color(),
                 });
             }
         }
@@ -232,14 +235,14 @@ impl World {
 
     fn rewrite_index_buffer(&mut self) {
         let mut indices: Vec<u16> = Vec::new();
-        let entities = self.entities.len();
-        for entity_nr in 0..entities {
+        let entities = self.objects.len();
+        for obj_nr in 0..entities {
             #[allow(clippy::cast_possible_truncation)]
             indices.extend_from_slice(
                 &shape::CIRCLE_INDICES
                     .as_slice()
                     .iter()
-                    .map(|v_idx| v_idx + entity_nr as u16 * shape::VERTICES_OF_A_CIRCLE)
+                    .map(|v_idx| v_idx + obj_nr as u16 * shape::VERTICES_OF_A_CIRCLE)
                     .collect::<Vec<u16>>(),
             );
         }
@@ -255,12 +258,12 @@ impl World {
 
     pub fn update_vertex_buffer(&mut self) {
         let mut vertices: Vec<Vertex> = Vec::new();
-        for entity in &self.entities {
+        for obj in &self.objects {
             for vertex_position in &self.default_shape.vertices {
-                let translated_vertex_position = vertex_position + entity.get_position();
+                let translated_vertex_position = vertex_position + obj.get_position();
                 vertices.push(Vertex {
                     position: translated_vertex_position.into(),
-                    color: entity.get_color(),
+                    color: obj.get_color(),
                 });
             }
         }
@@ -272,11 +275,11 @@ impl World {
     // I'm not sure if this is going to be useful in any forseeable future
     fn update_index_buffer(&mut self) {
         let mut indices: Vec<u16> = Vec::new();
-        let entities = self.entities.len();
-        for entity_nr in 0..entities {
+        let entities = self.objects.len();
+        for obj_nr in 0..entities {
             for index in shape::CIRCLE_INDICES {
                 #[allow(clippy::cast_possible_truncation)]
-                indices.push(index + entity_nr as u16 * shape::VERTICES_OF_A_CIRCLE);
+                indices.push(index + obj_nr as u16 * shape::VERTICES_OF_A_CIRCLE);
             }
         }
 
@@ -293,7 +296,7 @@ impl World {
     }
 
     pub fn entities_number(&self) -> usize {
-        self.entities.len()
+        self.objects.len()
     }
 
     #[allow(clippy::cast_possible_truncation, clippy::cast_sign_loss)]
@@ -303,8 +306,8 @@ impl World {
 
     pub fn solve_collisions_with_grid(&mut self) {
         self.grid.iter_mut().for_each(Vec::clear);
-        for (idx, entity) in self.entities.iter().enumerate() {
-            let (x, y) = Self::get_ij(entity.get_position().x, entity.get_position().y);
+        for (idx, obj) in self.objects.iter().enumerate() {
+            let (x, y) = Self::get_ij(obj.get_position().x, obj.get_position().y);
             self.grid[y][x].push(idx);
         }
 
@@ -318,13 +321,13 @@ impl World {
                             possible_collisions.append(&mut collisions_pocket);
                         }
                     }
-                    for (pos_1, &entity_index_1) in possible_collisions.iter().enumerate() {
-                        for &entity_index_2 in possible_collisions.iter().skip(pos_1 + 1) {
-                            let entity_1 = &self.entities[entity_index_1];
-                            let entity_2 = &self.entities[entity_index_2];
+                    for (pos_1, &obj_index_1) in possible_collisions.iter().enumerate() {
+                        for &obj_index_2 in possible_collisions.iter().skip(pos_1 + 1) {
+                            let obj_1 = &self.objects[obj_index_1];
+                            let obj_2 = &self.objects[obj_index_2];
 
-                            if entity_1.collides_with(entity_2) {
-                                self.solve_collision(entity_index_1, entity_index_2);
+                            if obj_1.collides_with(obj_2) {
+                                self.solve_collision(obj_index_1, obj_index_2);
                             }
                         }
                     }
@@ -334,22 +337,22 @@ impl World {
     }
 
     pub fn solve_collisions(&mut self) {
-        for i in 0..self.entities.len() {
-            for j in i + 1..self.entities.len() {
-                if self.entities[i].collides_with(&self.entities[j]) {
+        for i in 0..self.objects.len() {
+            for j in i + 1..self.objects.len() {
+                if self.objects[i].collides_with(&self.objects[j]) {
                     self.solve_collision(i, j);
                 }
             }
         }
     }
 
-    fn solve_collision(&mut self, entity1_idx: usize, entity2_idx: usize) {
+    fn solve_collision(&mut self, obj1_idx: usize, obj2_idx: usize) {
         let delta_vector =
-            self.entities[entity1_idx].get_position() - self.entities[entity2_idx].get_position();
+            self.objects[obj1_idx].get_position() - self.objects[obj2_idx].get_position();
         let distance = delta_vector.norm();
         let delta = delta_vector.normalize() * (RADIUS - distance / 2.0);
-        self.entities[entity1_idx].shift(delta);
-        self.entities[entity2_idx].shift(-delta);
+        self.objects[obj1_idx].shift(delta);
+        self.objects[obj2_idx].shift(-delta);
     }
 }
 
