@@ -74,7 +74,7 @@ impl Renderer {
         let mut vertices: Vec<Vertex> = Vec::new();
         for obj in objects {
             for vertex_position in &self.default_shape.vertices {
-                let translated_vertex_position = vertex_position + obj.get_position();
+                let translated_vertex_position = vertex_position + obj.get_center();
                 vertices.push(Vertex {
                     position: translated_vertex_position.into(),
                     color: obj.get_color(),
@@ -114,7 +114,7 @@ impl Renderer {
         let mut vertices: Vec<Vertex> = Vec::new();
         for obj in objects {
             for vertex_position in &self.default_shape.vertices {
-                let translated_vertex_position = vertex_position + obj.get_position();
+                let translated_vertex_position = vertex_position + obj.get_center();
                 vertices.push(Vertex {
                     position: translated_vertex_position.into(),
                     color: obj.get_color(),

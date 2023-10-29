@@ -21,7 +21,7 @@ impl VerletObject {
         }
     }
 
-    pub const fn get_position(&self) -> Vec2 {
+    pub const fn get_center(&self) -> Vec2 {
         self.position
     }
 

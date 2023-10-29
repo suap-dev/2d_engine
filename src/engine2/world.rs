@@ -1,3 +1,5 @@
+use std::f32::consts::PI;
+
 use glium::glutin::event_loop::EventLoop;
 use grid::Grid;
 use nalgebra_glm::{rotation2d, vec2, vec2_to_vec3, vec3, Vec2};
@@ -73,9 +75,9 @@ impl World {
                 const CONSTRAINT_CENTER: Vec2 = Vec2::new(0.0, 0.0);
                 const CONSTRAINT_RADIUS: f32 = 0.9;
 
-                let distance_from_center = obj.get_position().metric_distance(&CONSTRAINT_CENTER);
+                let distance_from_center = obj.get_center().metric_distance(&CONSTRAINT_CENTER);
                 if distance_from_center > CONSTRAINT_RADIUS {
-                    let distance_vec = obj.get_position() - CONSTRAINT_CENTER;
+                    let distance_vec = obj.get_center() - CONSTRAINT_CENTER;
                     let radius_vec = distance_vec.normalize() * CONSTRAINT_RADIUS;
                     let trespass_vec = distance_vec - radius_vec;
                     Some(trespass_vec)
@@ -87,18 +89,18 @@ impl World {
                 const CONSTRAINT_BOUND: f32 = 0.9;
 
                 let clamped = vec2(
-                    obj.get_position()
+                    obj.get_center()
                         .x
                         .clamp(-CONSTRAINT_BOUND, CONSTRAINT_BOUND),
-                    obj.get_position()
+                    obj.get_center()
                         .y
                         .clamp(-CONSTRAINT_BOUND, CONSTRAINT_BOUND),
                 );
 
-                if clamped == obj.get_position() {
+                if clamped == obj.get_center() {
                     None
                 } else {
-                    Some(obj.get_position() - clamped)
+                    Some(obj.get_center() - clamped)
                 }
             }
         }
@@ -163,7 +165,7 @@ impl World {
     pub fn solve_collisions_with_grid(&mut self) {
         self.grid.iter_mut().for_each(Vec::clear);
         for (idx, obj) in self.objects.iter().enumerate() {
-            let (x, y) = Self::get_ij(obj.get_position().x, obj.get_position().y);
+            let (x, y) = Self::get_ij(obj.get_center().x, obj.get_center().y);
             self.grid[y][x].push(idx);
         }
 
@@ -203,12 +205,33 @@ impl World {
     }
 
     fn solve_collision(&mut self, obj1_idx: usize, obj2_idx: usize) {
-        let delta_vector =
-            self.objects[obj1_idx].get_position() - self.objects[obj2_idx].get_position();
-        let distance = delta_vector.norm();
-        let delta = delta_vector.normalize() * (RADIUS - distance / 2.0);
-        self.objects[obj1_idx].shift(delta);
-        self.objects[obj2_idx].shift(-delta);
+        let obj1 = &self.objects[obj1_idx];
+        let obj2 = &self.objects[obj2_idx];
+
+        let centers_distance = obj2.get_center().metric_distance(&obj1.get_center());
+        let radius_sum = obj2.get_radius() + obj1.get_radius();
+
+        if centers_distance < radius_sum {
+            let delta_versor = (obj2.get_center() - obj1.get_center()).normalize();
+            let m1 = PI * obj1.get_radius().powi(2);
+            let m2 = PI * obj2.get_radius().powi(2);
+
+            let adjustment_vector = delta_versor * (radius_sum - centers_distance);
+
+            let adjustment1 = -(m2 / (m1 + m2)) * adjustment_vector;
+            let adjustment2 = (m1 / (m1 + m2)) * adjustment_vector;
+
+            // let mut obj1 = &obj1;
+            self.objects[obj1_idx].shift(adjustment1);
+            self.objects[obj2_idx].shift(adjustment2);
+        }
+
+        // let delta_vector =
+        //     self.objects[obj1_idx].get_position() - self.objects[obj2_idx].get_position();
+        // let distance = delta_vector.norm();
+        // let delta = delta_vector.normalize() * (RADIUS - distance / 2.0);
+        // self.objects[obj1_idx].shift(delta);
+        // self.objects[obj2_idx].shift(-delta);
     }
 
     pub fn update_vertex_buffer(&mut self) {
