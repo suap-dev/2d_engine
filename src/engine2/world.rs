@@ -3,6 +3,7 @@ use std::f32::consts::PI;
 use glium::glutin::event_loop::EventLoop;
 use grid::Grid;
 use nalgebra_glm::{rotation2d, vec2, vec2_to_vec3, vec3, Vec2};
+use rand::random;
 
 use crate::engine2::{graphics::Renderer, verlet_object::VerletObject};
 
@@ -52,12 +53,14 @@ impl World {
         for _row in 0..rows {
             for col in 0..columns {
                 let temp_x = distance.mul_add(col as f32, x);
-                let position = rotation2d(rotation) * vec3(temp_x, y, 1.0) + vec2_to_vec3(&origin);
-                self.objects.push(VerletObject::new(
-                    position.xy(),
-                    radius,
-                    [1.0, 1.0, 1.0, 1.0],
-                ));
+                let center = rotation2d(rotation) * vec3(temp_x, y, 1.0) + vec2_to_vec3(&origin);
+
+                let randomizer = random::<f32>().mul_add(2.0, -1.0);
+                let delta_radius = randomizer * radius_deviation;
+                let radius = radius + delta_radius;
+
+                self.objects
+                    .push(VerletObject::new(center.xy(), radius, [1.0, 1.0, 1.0, 1.0]));
             }
             y -= distance;
         }

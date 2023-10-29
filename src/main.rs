@@ -12,13 +12,13 @@ use winit_input_helper::WinitInputHelper;
 use bench::Bench;
 use engine2::world;
 
-pub const RADIUS: f32 = 0.005;
+pub const RADIUS: f32 = 0.01;
 
 fn main() {
     let event_loop = EventLoop::new();
     let mut world = world::World::new(&event_loop);
     world.populate(
-        50,
+        40,
         40,
         vec2(0.0, 0.0),
         TAU / 45.0,
