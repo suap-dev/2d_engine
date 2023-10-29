@@ -3,30 +3,22 @@
 mod bench;
 mod engine2;
 
-use std::{f32::consts::TAU, time::Instant};
+use std::time::Instant;
 
 use glium::glutin::event_loop::{ControlFlow, EventLoop};
 use nalgebra_glm::vec2;
 use winit_input_helper::WinitInputHelper;
 
-use bench::Bench;
-use engine2::world;
-
-pub const RADIUS: f32 = 0.01;
+use crate::{
+    bench::Bench,
+    engine2::{objects_generator::ObjectsGenerator, world},
+};
 
 fn main() {
     let event_loop = EventLoop::new();
     let mut world = world::World::new(&event_loop);
-    world.populate(
-        40,
-        40,
-        vec2(0.0, 0.0),
-        TAU / 45.0,
-        RADIUS,
-        RADIUS / 3.0,
-        0,
-        RADIUS / 5.0,
-    );
+    let mut generator = ObjectsGenerator::default();
+    world.populate(&mut generator);
 
     let mut input = WinitInputHelper::new();
     let mut timer = Timer::new();
@@ -51,14 +43,13 @@ fn main() {
             if let Some((x, y)) = input.mouse() {
                 if input.mouse_pressed(0) {
                     mouse_timer = Instant::now();
-                    world.add_obj_at(world.to_gl_coords(vec2(x, y)), RADIUS);
-                    println!("now");
+                    world.add_obj_at(world.to_gl_coords(vec2(x, y)), generator.random_radius());
                 }
                 if input.mouse_held(0) {
                     mouse_tick_delta += mouse_timer.elapsed().as_secs_f32();
                     mouse_timer = Instant::now();
                     while mouse_tick_delta > mouse_tick_every {
-                        world.add_obj_at(world.to_gl_coords(vec2(x, y)), RADIUS);
+                        world.add_obj_at(world.to_gl_coords(vec2(x, y)), generator.random_radius());
                         mouse_tick_delta -= mouse_tick_every;
                     }
                 }

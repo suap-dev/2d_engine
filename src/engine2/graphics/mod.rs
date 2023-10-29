@@ -8,9 +8,10 @@ use glium::{
     uniform, Display, DrawParameters, IndexBuffer, Program, Surface, VertexBuffer,
 };
 
-use self::{shape::Shape, vertex::Vertex};
-
-use super::verlet_object::VerletObject;
+use crate::engine2::{
+    graphics::{shape::Shape, vertex::Vertex},
+    verlet_object::VerletObject,
+};
 
 pub struct Renderer {
     pub display: Display,

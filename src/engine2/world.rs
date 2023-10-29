@@ -3,9 +3,10 @@ use std::f32::consts::PI;
 use glium::glutin::event_loop::EventLoop;
 use grid::Grid;
 use nalgebra_glm::{rotation2d, vec2, vec2_to_vec3, vec3, Vec2};
-use rand::random;
 
-use crate::engine2::{graphics::Renderer, verlet_object::VerletObject};
+use crate::engine2::{
+    graphics::Renderer, objects_generator::ObjectsGenerator, verlet_object::VerletObject,
+};
 
 const WORLD_DIMENSIONS: [u32; 2] = [1000, 1000];
 const GRAVITY: Vec2 = Vec2::new(0.0, -0.1);
@@ -35,29 +36,19 @@ impl World {
     }
 
     #[allow(clippy::cast_precision_loss)]
-    pub fn populate(
-        &mut self,
-        columns: usize,
-        rows: usize,
-        origin: Vec2,
-        rotation: f32,
-        radius: f32,
-        radius_deviation: f32,
-        deviation_seed: i32,
-        min_distance: f32,
-    ) {
-        let distance = (radius + radius_deviation).mul_add(2.0, min_distance);
-        let x = -(columns as f32 / 2.0) * distance;
-        let mut y = (rows as f32 / 2.0) * distance;
+    pub fn populate(&mut self, generator: &mut ObjectsGenerator) {
+        let distance = (generator.obj_radius + generator.obj_radius_deviation)
+            .mul_add(2.0, generator.obj_min_separation);
+        let x = -(generator.grid_columns as f32 / 2.0) * distance;
+        let mut y = (generator.grid_rows as f32 / 2.0) * distance;
 
-        for _row in 0..rows {
-            for col in 0..columns {
+        for _row in 0..generator.grid_rows {
+            for col in 0..generator.grid_columns {
                 let temp_x = distance.mul_add(col as f32, x);
-                let center = rotation2d(rotation) * vec3(temp_x, y, 1.0) + vec2_to_vec3(&origin);
+                let center = rotation2d(generator.grid_rotation) * vec3(temp_x, y, 1.0)
+                    + vec2_to_vec3(&generator.grid_center);
 
-                let randomizer = random::<f32>().mul_add(2.0, -1.0);
-                let delta_radius = randomizer * radius_deviation;
-                let radius = radius + delta_radius;
+                let radius = generator.random_radius();
 
                 self.objects
                     .push(VerletObject::new(center.xy(), radius, [1.0, 1.0, 1.0, 1.0]));
