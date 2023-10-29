@@ -29,7 +29,7 @@ fn main() {
     let mouse_tick_every: f32 = 0.1; //seconds
 
     // BENCHING
-    let mut bench = Bench::init(4000);
+    let mut bench = Bench::init(2000);
 
     event_loop.run(move |event, _, control_flow| {
         control_flow.set_poll();
@@ -78,7 +78,7 @@ fn main() {
             bench.reset();
             println!(
                 "Number of objects in simulation: {}",
-                world.entities_number()
+                world.objects_number()
             );
         }
     });

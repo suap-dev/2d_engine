@@ -9,7 +9,7 @@ use crate::engine2::{
 };
 
 const WORLD_DIMENSIONS: [u32; 2] = [1000, 1000];
-const GRAVITY: Vec2 = Vec2::new(0.0, -0.1);
+const GRAVITY: Vec2 = Vec2::new(0.0, -0.5);
 
 pub struct World {
     objects: Vec<VerletObject>,
@@ -17,7 +17,7 @@ pub struct World {
     height: f32,
     gravity: Vec2,
     // grid: Grid,
-    // grid: Grid<Vec<usize>>,
+    grid: Grid<Vec<usize>>,
     renderer: Renderer,
 }
 impl World {
@@ -26,11 +26,11 @@ impl World {
         // let grid_dimensions = (2.0 / RADIUS) as usize + 1;
         #[allow(clippy::cast_precision_loss)]
         Self {
-            objects: Vec::with_capacity(16_384),
+            objects: Vec::new(),
             width: WORLD_DIMENSIONS[0] as f32,
             height: WORLD_DIMENSIONS[1] as f32,
             gravity: GRAVITY,
-            // grid: Grid::new(grid_dimensions, grid_dimensions),
+            grid: Grid::new(100, 100),
             renderer: Renderer::new(event_loop, WORLD_DIMENSIONS),
         }
     }
@@ -112,9 +112,9 @@ impl World {
 
             // TODO: determine the correct order of these two
             self.constrain(Constraint::Rectangular);
-            self.solve_collisions();
+            // self.solve_collisions();
 
-            // self.solve_collisions_with_grid();
+            self.solve_collisions_with_grid();
             self.update_positions(dt);
             // self.update_posiion
         }
@@ -152,8 +152,36 @@ impl World {
         vec2(x, -y)
     }
 
-    pub fn entities_number(&self) -> usize {
+    pub fn objects_number(&self) -> usize {
         self.objects.len()
+    }
+
+    pub fn solve_collisions_with_grid(&mut self) {
+        let rows = 100;
+        let cols = 100;
+        let mut grid: Grid<Vec<usize>> = Grid::new(rows, cols);
+
+        let col_width = self.width / cols as f32;
+        let row_height = self.height / rows as f32;
+
+        for i in 0..self.objects.len() {
+            let center = self.objects[i].get_center();
+            let (j, k) = (
+                (center.y / row_height) as usize,
+                (center.x / col_width) as usize,
+            );
+            grid[j][k].push(i);
+        }
+
+        for pocket in grid.iter() {
+            for i in 0..pocket.len() {
+                for j in i + 1..pocket.len() {
+                    if self.objects[pocket[i]].collides_with(&self.objects[pocket[j]]) {
+                        self.solve_collision(i, j);
+                    }
+                }
+            }
+        }
     }
 
     // #[allow(clippy::cast_possible_truncation, clippy::cast_sign_loss)]
