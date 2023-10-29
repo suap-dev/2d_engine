@@ -19,7 +19,6 @@ pub struct Shape {
     rotation: f32,
 }
 pub const VERTICES_OF_A_CIRCLE: u16 = 8;
-pub const RADIUS: f32 = 0.005;
 pub const CIRCLE_INDICES: [u16; 18] = [
     0, 1, 2, 0, 2, 3, 0, 3, 4, 0, 4, 5, 0, 5, 6, 0, 6,
     7,

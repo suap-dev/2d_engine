@@ -8,17 +8,14 @@ use glium::{
     uniform, Display, DrawParameters, IndexBuffer, Program, Surface, VertexBuffer,
 };
 
-use self::{
-    shape::{Shape, RADIUS},
-    vertex::Vertex,
-};
+use self::{shape::Shape, vertex::Vertex};
 
 use super::verlet_object::VerletObject;
 
 pub struct Renderer {
     pub display: Display,
     background_color: [f32; 4],
-    pub default_shape: Shape,
+    // pub default_shape: Shape,
     program: Program,
     vertex_buffer: Option<VertexBuffer<Vertex>>,
     index_buffer: Option<IndexBuffer<u16>>,
@@ -37,7 +34,7 @@ impl Renderer {
         Self {
             display,
             background_color: [0.0, 0.0, 0.0, 1.0],
-            default_shape: Shape::circle(RADIUS, [1.0, 1.0, 1.0, 1.0]),
+            // default_shape: Shape::circle(RADIUS, [1.0, 1.0, 1.0, 1.0]),
             program,
             vertex_buffer: None,
             index_buffer: None,
@@ -73,7 +70,7 @@ impl Renderer {
     pub fn rewrite_vertex_buffer(&mut self, objects: &Vec<VerletObject>) {
         let mut vertices: Vec<Vertex> = Vec::new();
         for obj in objects {
-            for vertex_position in &self.default_shape.vertices {
+            for vertex_position in Shape::circle(obj.get_radius(), [1.0, 1.0, 1.0, 1.0]).vertices {
                 let translated_vertex_position = vertex_position + obj.get_center();
                 vertices.push(Vertex {
                     position: translated_vertex_position.into(),
@@ -113,7 +110,7 @@ impl Renderer {
     pub fn update_vertex_buffer(&mut self, objects: &Vec<VerletObject>) {
         let mut vertices: Vec<Vertex> = Vec::new();
         for obj in objects {
-            for vertex_position in &self.default_shape.vertices {
+            for vertex_position in Shape::circle(obj.get_radius(), [1.0, 1.0, 1.0, 1.0]).vertices {
                 let translated_vertex_position = vertex_position + obj.get_center();
                 vertices.push(Vertex {
                     position: translated_vertex_position.into(),
