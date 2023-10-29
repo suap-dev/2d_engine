@@ -19,6 +19,11 @@ fn main() {
 
     let mut input = WinitInputHelper::new();
     let mut timer = Timer::new();
+    
+    // TODO: Add this functionality to Timer:
+    let mut mouse_timer: Instant = Instant::now();
+    let mut mouse_tick_delta = 0.0;
+    const MOUSE_TICK_EVERY: f32 = 0.2; //seconds
 
     // BENCHING
     let mut bench = Bench::init(4000);
@@ -32,9 +37,19 @@ fn main() {
             if input.quit() {
                 *control_flow = ControlFlow::Exit;
             }
-            if input.mouse_held(0) {
-                if let Some((x, y)) = input.mouse() {
+            if let Some((x, y)) = input.mouse() {
+                if input.mouse_pressed(0) {
+                    mouse_timer = Instant::now();
                     world.add_obj_at(world.to_gl_coords(vec2(x, y)));
+                    println!("now");
+                }
+                if input.mouse_held(0) {
+                    mouse_tick_delta += mouse_timer.elapsed().as_secs_f32();
+                    mouse_timer = Instant::now();
+                    while mouse_tick_delta > MOUSE_TICK_EVERY {
+                        world.add_obj_at(world.to_gl_coords(vec2(x, y)));
+                        mouse_tick_delta -= MOUSE_TICK_EVERY;
+                    }
                 }
             }
             bench.events_cleared();
