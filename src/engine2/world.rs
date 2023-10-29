@@ -85,9 +85,10 @@ impl World {
                 const CONSTRAINT_RADIUS: f32 = 0.9;
 
                 let distance_from_center = obj.get_center().metric_distance(&CONSTRAINT_CENTER);
-                if distance_from_center > CONSTRAINT_RADIUS {
+                if distance_from_center + obj.get_radius() > CONSTRAINT_RADIUS {
                     let distance_vec = obj.get_center() - CONSTRAINT_CENTER;
-                    let radius_vec = distance_vec.normalize() * CONSTRAINT_RADIUS;
+                    let radius_vec =
+                        distance_vec.normalize() * (CONSTRAINT_RADIUS - obj.get_radius());
                     let trespass_vec = distance_vec - radius_vec;
                     Some(trespass_vec)
                 } else {
@@ -97,13 +98,11 @@ impl World {
             Constraint::Rectangular => {
                 const CONSTRAINT_BOUND: f32 = 0.9;
 
+                let max_center = CONSTRAINT_BOUND - obj.get_radius();
+
                 let clamped = vec2(
-                    obj.get_center()
-                        .x
-                        .clamp(-CONSTRAINT_BOUND, CONSTRAINT_BOUND),
-                    obj.get_center()
-                        .y
-                        .clamp(-CONSTRAINT_BOUND, CONSTRAINT_BOUND),
+                    obj.get_center().x.clamp(-max_center, max_center),
+                    obj.get_center().y.clamp(-max_center, max_center),
                 );
 
                 if clamped == obj.get_center() {
