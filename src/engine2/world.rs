@@ -45,7 +45,8 @@ impl World {
             self.constrain(Constraint::Rectangular);
 
             // self.solve_collisions();
-            self.solve_collisions_with_grid();
+            // self.solve_collisions_with_grid();
+            self.solve_collisions_with_grid_offsets();
 
             self.update_positions(dt);
         }
@@ -190,6 +191,51 @@ impl World {
                         self.solve_collision(i, j);
                     }
                 });
+            }
+        }
+    }
+
+    pub fn solve_collisions_with_grid_offsets(&mut self) {
+        let mut grid: Grid<Vec<usize>> = Grid::new(GRID_ROWS as usize, GRID_COLS as usize);
+
+        for (idx, obj) in self.objects.iter().enumerate() {
+            let mut i = obj.get_center().x;
+            let mut j = obj.get_center().y;
+
+            i += 1.0;
+            let i = (i / COL_WIDTH).trunc() as usize;
+
+            j += 1.0;
+            let j = (j / ROW_HEIGHT).trunc() as usize;
+
+            grid[i][j].push(idx);
+        }
+
+        for offset in 1..4 {
+            for row in (offset..grid.rows() - 1).step_by(3) {
+                for offset in 1..4 {
+                    for col in (offset..grid.cols() - 1).step_by(3) {
+                        let start_row = row - 1;
+                        let end_row = row + 1;
+
+                        let start_col = col - 1;
+                        let end_col = col + 1;
+
+                        let mut big_pocket = Vec::new();
+
+                        for row in start_row..end_row {
+                            for col in start_col..end_col {
+                                big_pocket.append(&mut grid[row][col].clone());
+                            }
+                        }
+
+                        big_pocket.iter().tuple_combinations().for_each(|(&i, &j)| {
+                            if self.objects[i].collides_with(&self.objects[j]) {
+                                self.solve_collision(i, j);
+                            }
+                        });
+                    }
+                }
             }
         }
     }
