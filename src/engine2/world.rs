@@ -46,7 +46,7 @@ impl World {
 
             // self.solve_collisions();
             // self.solve_collisions_with_grid();
-            self.solve_collisions_with_grid_offsets();
+            self.solve_collisions_with_grid_chunks();
 
             self.update_positions(dt);
         }
@@ -195,7 +195,7 @@ impl World {
         }
     }
 
-    pub fn solve_collisions_with_grid_offsets(&mut self) {
+    pub fn solve_collisions_with_grid_chunks(&mut self) {
         let mut grid: Grid<Vec<usize>> = Grid::new(GRID_ROWS as usize, GRID_COLS as usize);
 
         for (idx, obj) in self.objects.iter().enumerate() {
