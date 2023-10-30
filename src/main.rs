@@ -26,7 +26,7 @@ fn main() {
     // TODO: Add this functionality to Timer:
     let mut mouse_timer: Instant = Instant::now();
     let mut mouse_tick_delta = 0.0;
-    let mouse_tick_every: f32 = 0.1; //seconds
+    let mouse_tick_every: f32 = 0.05; //seconds
 
     // BENCHING
     let mut bench = Bench::init(30000);

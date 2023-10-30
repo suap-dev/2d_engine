@@ -16,12 +16,12 @@ impl ObjectsGenerator {
     pub fn default() -> Self {
         Self {
             grid_center: Vec2::new(0.0, 0.0),
-            grid_columns: 50,
-            grid_rows: 40,
+            grid_columns: 60,
+            grid_rows: 60,
             grid_rotation: TAU / 45.0,
-            obj_radius: 0.01,
-            obj_radius_deviation: 0.005,
-            obj_min_separation: 0.001,
+            obj_radius: 0.003,
+            obj_radius_deviation: 0.0015,
+            obj_min_separation: 0.0003,
         }
     }
     pub fn random_radius(&mut self) -> f32 {

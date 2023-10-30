@@ -18,7 +18,7 @@ const GRID_COLS: u16 = 50;
 const ROW_HEIGHT: f32 = 2.0 / GRID_ROWS as f32;
 const COL_WIDTH: f32 = 2.0 / GRID_COLS as f32;
 
-const GRAVITY: Vec2 = Vec2::new(0.0, -0.5);
+const GRAVITY: Vec2 = Vec2::new(0.0, -1.0);
 
 pub struct World {
     objects: Vec<VerletObject>,
