@@ -2,22 +2,29 @@ use std::f32::consts::PI;
 
 use glium::glutin::event_loop::EventLoop;
 use grid::Grid;
+use itertools::Itertools;
 use nalgebra_glm::{rotation2d, vec2, vec2_to_vec3, vec3, Vec2};
 
 use crate::engine2::{
     graphics::Renderer, objects_generator::ObjectsGenerator, verlet_object::VerletObject,
 };
 
-const WORLD_DIMENSIONS: [u32; 2] = [1000, 1000];
+const WORLD_HEIGHT: u16 = 1000;
+const WORLD_WIDTH: u16 = 1000;
+
+const GRID_ROWS: u16 = 50;
+const GRID_COLS: u16 = 50;
+
+const ROW_HEIGHT: f32 = 2.0 / GRID_ROWS as f32;
+const COL_WIDTH: f32 = 2.0 / GRID_COLS as f32;
+
 const GRAVITY: Vec2 = Vec2::new(0.0, -0.5);
 
 pub struct World {
     objects: Vec<VerletObject>,
-    width: f32,
-    height: f32,
     gravity: Vec2,
     // grid: Grid,
-    grid: Grid<Vec<usize>>,
+    // grid: Grid<Vec<usize>>,
     renderer: Renderer,
 }
 impl World {
@@ -27,11 +34,25 @@ impl World {
         #[allow(clippy::cast_precision_loss)]
         Self {
             objects: Vec::new(),
-            width: WORLD_DIMENSIONS[0] as f32,
-            height: WORLD_DIMENSIONS[1] as f32,
             gravity: GRAVITY,
-            grid: Grid::new(100, 100),
-            renderer: Renderer::new(event_loop, WORLD_DIMENSIONS),
+            // grid: Grid::new(100, 100),
+            renderer: Renderer::new(event_loop, WORLD_WIDTH as u32, WORLD_HEIGHT as u32),
+        }
+    }
+
+    pub fn update(&mut self, dt: f32, substeps: usize) {
+        let dt = dt / substeps as f32;
+        for _ in 0..substeps {
+            self.apply_gravity();
+
+            // TODO: determine the correct order of these two
+            self.constrain(Constraint::Rectangular);
+
+            // self.solve_collisions();
+            self.solve_collisions_with_grid();
+
+            self.update_positions(dt);
+            // self.update_posiion
         }
     }
 
@@ -105,21 +126,6 @@ impl World {
         }
     }
 
-    pub fn update(&mut self, dt: f32, substeps: usize) {
-        let dt = dt / substeps as f32;
-        for _ in 0..substeps {
-            self.apply_gravity();
-
-            // TODO: determine the correct order of these two
-            self.constrain(Constraint::Rectangular);
-            // self.solve_collisions();
-
-            self.solve_collisions_with_grid();
-            self.update_positions(dt);
-            // self.update_posiion
-        }
-    }
-
     fn apply_gravity(&mut self) {
         self.objects
             .iter_mut()
@@ -130,10 +136,6 @@ impl World {
         self.objects.iter_mut().for_each(|obj| {
             obj.update_position(dt);
         });
-
-        // self.solve_collisions();
-        // self.solve_collisions_with_grid();
-        // self.update_vertex_buffer();
     }
 
     pub fn add_obj_at(&mut self, center: Vec2, radius: f32) {
@@ -146,8 +148,8 @@ impl World {
     }
 
     pub fn to_gl_coords(&self, physical_coords: Vec2) -> Vec2 {
-        let x = (physical_coords.x / self.width).mul_add(2.0, -1.0);
-        let y = (physical_coords.y / self.height).mul_add(2.0, -1.0);
+        let x = (physical_coords.x / WORLD_WIDTH as f32).mul_add(2.0, -1.0);
+        let y = (physical_coords.y / WORLD_HEIGHT as f32).mul_add(2.0, -1.0);
 
         vec2(x, -y)
     }
@@ -157,30 +159,62 @@ impl World {
     }
 
     pub fn solve_collisions_with_grid(&mut self) {
-        let rows = 100;
-        let cols = 100;
-        let mut grid: Grid<Vec<usize>> = Grid::new(rows, cols);
+        let mut grid: Grid<Vec<usize>> = Grid::new(GRID_ROWS as usize, GRID_COLS as usize);
 
-        let col_width = self.width / cols as f32;
-        let row_height = self.height / rows as f32;
+        for (idx, obj) in self.objects.iter().enumerate() {
+            let mut i = obj.get_center().x;
+            let mut j = obj.get_center().y;
 
-        for i in 0..self.objects.len() {
-            let center = self.objects[i].get_center();
-            let (j, k) = (
-                (center.y / row_height) as usize,
-                (center.x / col_width) as usize,
-            );
-            grid[j][k].push(i);
+            i += 1.0;
+            let i = (i / COL_WIDTH).trunc() as usize;
+
+            j += 1.0;
+            let j = (j / ROW_HEIGHT).trunc() as usize;
+
+            grid[i][j].push(idx);
         }
 
-        for pocket in grid.iter() {
-            for i in 0..pocket.len() {
-                for j in i + 1..pocket.len() {
-                    if self.objects[pocket[i]].collides_with(&self.objects[pocket[j]]) {
-                        self.solve_collision(i, j);
+        for row in 1..grid.rows() - 1 {
+            for col in 1..grid.cols() - 1 {
+                let start_row = row - 1;
+                let end_row = row + 1;
+
+                let start_col = col - 1;
+                let end_col = col + 1;
+
+                let mut big_pocket = Vec::new();
+
+                for row in start_row..end_row {
+                    for col in start_col..end_col {
+                        big_pocket.append(&mut grid[row][col].clone());
                     }
                 }
+
+                big_pocket.iter().tuple_combinations().for_each(|(i, j)| {
+                    if self.objects[*i].collides_with(&self.objects[*j]) {
+                        self.solve_collision(*i, *j);
+                    }
+                });
             }
+
+            // for pocket in grid.iter() {
+            //     pocket
+            //         .iter()
+            //         .tuple_combinations::<(_, _)>()
+            //         .for_each(|(i, j)| {
+            //             if self.objects[*i].collides_with(&self.objects[*j]) {
+            //                 self.solve_collision(*i, *j);
+            //             }
+            //         });
+            // for k in 0..pocket.len() {
+            //     let i = pocket[k];
+            //     for l in (k + 1)..pocket.len() {
+            //         let j = pocket[l];
+            //         if self.objects[i].collides_with(&self.objects[j]) {
+            //             self.solve_collision(i, j);
+            //         }
+            //     }
+            // }
         }
     }
 
@@ -222,13 +256,16 @@ impl World {
     // }
 
     pub fn solve_collisions(&mut self) {
-        for i in 0..self.objects.len() {
-            for j in i + 1..self.objects.len() {
+        (0..self.objects.len())
+            .tuple_combinations()
+            .for_each(|(i, j)| {
                 if self.objects[i].collides_with(&self.objects[j]) {
                     self.solve_collision(i, j);
                 }
-            }
-        }
+            });
+        // for i in 0..self.objects.len() {
+        //     for j in i + 1..self.objects.len() {}
+        // }
     }
 
     fn solve_collision(&mut self, obj1_idx: usize, obj2_idx: usize) {
@@ -252,13 +289,6 @@ impl World {
             self.objects[obj1_idx].shift(adjustment1);
             self.objects[obj2_idx].shift(adjustment2);
         }
-
-        // let delta_vector =
-        //     self.objects[obj1_idx].get_position() - self.objects[obj2_idx].get_position();
-        // let distance = delta_vector.norm();
-        // let delta = delta_vector.normalize() * (RADIUS - distance / 2.0);
-        // self.objects[obj1_idx].shift(delta);
-        // self.objects[obj2_idx].shift(-delta);
     }
 
     pub fn update_vertex_buffer(&mut self) {

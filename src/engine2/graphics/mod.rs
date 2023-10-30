@@ -22,9 +22,9 @@ pub struct Renderer {
     index_buffer: Option<IndexBuffer<u16>>,
 }
 impl Renderer {
-    pub fn new<T>(event_loop: &EventLoop<T>, physical_size: [u32; 2]) -> Self {
+    pub fn new<T>(event_loop: &EventLoop<T>, width: u32, height: u32) -> Self {
         let window_builder = WindowBuilder::new()
-            .with_inner_size(PhysicalSize::new(physical_size[0], physical_size[1]))
+            .with_inner_size(PhysicalSize::new(width, height))
             .with_resizable(false);
         let context_builder = ContextBuilder::new();
         let display = Display::new(window_builder, context_builder, event_loop)
