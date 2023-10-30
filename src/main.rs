@@ -29,7 +29,7 @@ fn main() {
     let mouse_tick_every: f32 = 0.05; //seconds
 
     // BENCHING
-    let mut bench = Bench::init(30000);
+    let mut bench = Bench::init(10000);
 
     event_loop.run(move |event, _, control_flow| {
         control_flow.set_poll();
@@ -63,7 +63,7 @@ fn main() {
             // world.solve_collisions();
             // bench.collisions_solved();
 
-            world.update(timer.dt32(), 2);
+            world.update(timer.dt32(), 4);
             bench.collisions_solved();
 
             world.update_vertex_buffer();

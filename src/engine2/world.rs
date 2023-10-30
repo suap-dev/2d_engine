@@ -23,19 +23,15 @@ const GRAVITY: Vec2 = Vec2::new(0.0, -1.0);
 pub struct World {
     objects: Vec<VerletObject>,
     gravity: Vec2,
-    // grid: Grid,
-    // grid: Grid<Vec<usize>>,
     renderer: Renderer,
 }
 impl World {
     pub fn new<T>(event_loop: &EventLoop<T>) -> Self {
         #[allow(clippy::cast_possible_truncation, clippy::cast_sign_loss)]
-        // let grid_dimensions = (2.0 / RADIUS) as usize + 1;
         #[allow(clippy::cast_precision_loss)]
         Self {
             objects: Vec::new(),
             gravity: GRAVITY,
-            // grid: Grid::new(100, 100),
             renderer: Renderer::new(event_loop, WORLD_WIDTH as u32, WORLD_HEIGHT as u32),
         }
     }
@@ -52,7 +48,6 @@ impl World {
             self.solve_collisions_with_grid();
 
             self.update_positions(dt);
-            // self.update_posiion
         }
     }
 
@@ -190,70 +185,14 @@ impl World {
                     }
                 }
 
-                big_pocket.iter().tuple_combinations().for_each(|(i, j)| {
-                    if self.objects[*i].collides_with(&self.objects[*j]) {
-                        self.solve_collision(*i, *j);
+                big_pocket.iter().tuple_combinations().for_each(|(&i, &j)| {
+                    if self.objects[i].collides_with(&self.objects[j]) {
+                        self.solve_collision(i, j);
                     }
                 });
             }
-
-            // for pocket in grid.iter() {
-            //     pocket
-            //         .iter()
-            //         .tuple_combinations::<(_, _)>()
-            //         .for_each(|(i, j)| {
-            //             if self.objects[*i].collides_with(&self.objects[*j]) {
-            //                 self.solve_collision(*i, *j);
-            //             }
-            //         });
-            // for k in 0..pocket.len() {
-            //     let i = pocket[k];
-            //     for l in (k + 1)..pocket.len() {
-            //         let j = pocket[l];
-            //         if self.objects[i].collides_with(&self.objects[j]) {
-            //             self.solve_collision(i, j);
-            //         }
-            //     }
-            // }
         }
     }
-
-    // #[allow(clippy::cast_possible_truncation, clippy::cast_sign_loss)]
-    // fn get_ij(x: f32, y: f32) -> (usize, usize) {
-    //     (((x + 1.0) / RADIUS) as usize, ((y + 1.0) / RADIUS) as usize)
-    // }
-
-    // pub fn solve_collisions_with_grid(&mut self) {
-    //     self.grid.iter_mut().for_each(Vec::clear);
-    //     for (idx, obj) in self.objects.iter().enumerate() {
-    //         let (x, y) = Self::get_ij(obj.get_center().x, obj.get_center().y);
-    //         self.grid[y][x].push(idx);
-    //     }
-
-    //     for r in 1..self.grid.rows() - 1 {
-    //         for c in 1..self.grid.cols() - 1 {
-    //             if !self.grid[r][c].is_empty() {
-    //                 let mut possible_collisions: Vec<usize> = Vec::new();
-    //                 for lr in r - 1..=r + 1 {
-    //                     for lc in c - 1..=c + 1 {
-    //                         let mut collisions_pocket = self.grid[lr][lc].clone();
-    //                         possible_collisions.append(&mut collisions_pocket);
-    //                     }
-    //                 }
-    //                 for (pos_1, &obj_index_1) in possible_collisions.iter().enumerate() {
-    //                     for &obj_index_2 in possible_collisions.iter().skip(pos_1 + 1) {
-    //                         let obj_1 = &self.objects[obj_index_1];
-    //                         let obj_2 = &self.objects[obj_index_2];
-
-    //                         if obj_1.collides_with(obj_2) {
-    //                             self.solve_collision(obj_index_1, obj_index_2);
-    //                         }
-    //                     }
-    //                 }
-    //             }
-    //         }
-    //     }
-    // }
 
     pub fn solve_collisions(&mut self) {
         (0..self.objects.len())
@@ -263,9 +202,6 @@ impl World {
                     self.solve_collision(i, j);
                 }
             });
-        // for i in 0..self.objects.len() {
-        //     for j in i + 1..self.objects.len() {}
-        // }
     }
 
     fn solve_collision(&mut self, obj1_idx: usize, obj2_idx: usize) {

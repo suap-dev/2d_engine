@@ -16,8 +16,8 @@ impl ObjectsGenerator {
     pub fn default() -> Self {
         Self {
             grid_center: Vec2::new(0.0, 0.0),
-            grid_columns: 60,
-            grid_rows: 60,
+            grid_columns: 50,
+            grid_rows: 80,
             grid_rotation: TAU / 45.0,
             obj_radius: 0.003,
             obj_radius_deviation: 0.0015,
