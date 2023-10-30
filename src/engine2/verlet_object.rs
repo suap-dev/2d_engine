@@ -2,6 +2,7 @@ use nalgebra_glm::Vec2;
 
 const VEC2_ZERO: Vec2 = Vec2::new(0.0, 0.0);
 
+#[derive(Clone, Copy)]
 pub struct VerletObject {
     position: Vec2,
     previous_position: Vec2,
