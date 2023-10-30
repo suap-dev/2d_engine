@@ -236,6 +236,26 @@ impl World {
     }
 }
 
+fn solve_collision_r(obj1: &mut VerletObject, obj2: &mut VerletObject) {
+    let centers_distance = obj2.get_center().metric_distance(&obj1.get_center());
+    let radius_sum = obj2.get_radius() + obj1.get_radius();
+
+    if centers_distance < radius_sum {
+        let delta_versor = (obj2.get_center() - obj1.get_center()).normalize();
+        let m1 = PI * obj1.get_radius().powi(2);
+        let m2 = PI * obj2.get_radius().powi(2);
+
+        let adjustment_vector = delta_versor * (radius_sum - centers_distance);
+
+        let adjustment1 = -(m2 / (m1 + m2)) * adjustment_vector;
+        let adjustment2 = (m1 / (m1 + m2)) * adjustment_vector;
+
+        // let mut obj1 = &obj1;
+        obj1.shift(adjustment1);
+        obj2.shift(adjustment2);
+    }
+}
+
 #[derive(Clone, Copy)]
 #[allow(dead_code)]
 enum Constraint {
